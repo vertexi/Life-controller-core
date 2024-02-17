@@ -123,7 +123,7 @@ int create_new_event(Document::AllocatorType& allocator, Value& events, std::str
         return 0;
     }
 
-    Value event_create_date_time_t_v(create_date_time_t);
+    Value event_create_date_time_t_v((int64_t)create_date_time_t);
     Value event_description_v(event_desc.c_str(), allocator);
 
     Value event_value(kObjectType);
@@ -182,8 +182,8 @@ int eval_log()
                 create_new_event(allocator, events, event_name, event_data, start_time_t, false);
             }
             auto& event_goals = events[event_name.c_str()]["goals"];
-            Value goal_start_time_t_v(start_time_t);
-            Value goal_end_time_t_v(end_time_t);
+            Value goal_start_time_t_v((int64_t)start_time_t);
+            Value goal_end_time_t_v((int64_t)end_time_t);
             Value goal_value(kObjectType);
             goal_value.AddMember("start_time_t", goal_start_time_t_v, allocator);
             goal_value.AddMember("end_time_t", goal_end_time_t_v, allocator);
