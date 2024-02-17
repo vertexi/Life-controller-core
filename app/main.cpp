@@ -1,15 +1,4 @@
 #include <stdio.h>
-
-#include "include/rapidjson/document.h"
-#include "include/rapidjson/writer.h"
-#include "include/rapidjson/stringbuffer.h"
-using namespace rapidjson;
-
-#include "include/fast-cpp-csv-parser/csv.h"
-
-#include <fstream>
-#include <iostream>
-#include <sstream>
 #include <string>
 
 #include <action.hpp>

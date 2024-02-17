@@ -1,0 +1,27 @@
+{
+    "name": "Life-controller-core",
+    "version": "1.0.0",
+    "description": "A life game base on time records",
+    "keywords": "life, record, game",
+    "repository":
+    {
+      "type": "git",
+      "url": "https://github.com/vertexi/Life-controller-core.git"
+    },
+    "authors":
+    [
+      {
+        "name": "Vertexi",
+        "url": "https://github.com/vertexi",
+        "maintainer": true
+      }
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/vertexi/Life-controller-core",
+    "dependencies": {
+
+    },
+    "frameworks": ["arduino"],
+    "platforms": "esp32",
+    "headers": ["action.h", "log_eval.hpp"]
+}
