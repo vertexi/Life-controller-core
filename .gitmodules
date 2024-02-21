@@ -1,0 +1,3 @@
+[submodule "app/hello_imgui"]
+	path = app/hello_imgui
+	url = https://github.com/pthom/hello_imgui
