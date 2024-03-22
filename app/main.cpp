@@ -9,10 +9,16 @@
 #include "hello_imgui/hello_imgui.h"
 #include <sstream>
 
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/prettywriter.h"
+#include "rapidjson/stringbuffer.h"
+
 struct MyAppSettings
 {
     char device_name[256] = "windows";
     bool counting = false;
+    std::time_t start_time = 0;
 };
 
 #include "asio.hpp"
@@ -30,17 +36,42 @@ struct AppState
 
 std::string MyAppSettingsToString(const MyAppSettings& myAppSettings)
 {
-    std::stringstream ss;
-    ss << myAppSettings.device_name << "\n";
-    ss << myAppSettings.counting << "\n";
-    return ss.str();
+    rapidjson::Document d;
+    d.SetObject();
+    auto& allocator = d.GetAllocator();
+    rapidjson::Value deviceName(myAppSettings.device_name, allocator);
+    rapidjson::Value counting(myAppSettings.counting);
+    rapidjson::Value startTime((int64_t)myAppSettings.start_time);
+
+    d.AddMember("deviceName", deviceName, allocator);
+    d.AddMember("counting", counting, allocator);
+    d.AddMember("startTime", startTime, allocator);
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+    d.Accept(writer);
+    return buffer.GetString();
 }
 MyAppSettings StringToMyAppSettings(const std::string& s)
 {
-    std::stringstream ss(s);
     MyAppSettings myAppSettings;
-    ss >> myAppSettings.device_name;
-    ss >> myAppSettings.counting;
+    rapidjson::Document d;
+    d.Parse(s.c_str());
+    if (d.IsObject())
+    {
+        if (d.HasMember("deviceName"))
+        {
+            strcpy_s(myAppSettings.device_name, d["deviceName"].GetString());
+        }
+        if (d.HasMember("counting"))
+        {
+            myAppSettings.counting = d["counting"].GetBool();
+        }
+        if (d.HasMember("startTime"))
+        {
+            myAppSettings.start_time = d["startTime"].GetInt64();
+        }
+    }
     return myAppSettings;
 }
 
@@ -93,6 +124,20 @@ void updateTime(const asio::error_code& ec, asio::steady_timer* t, char* time_st
     t->async_wait(std::bind(updateTime, std::placeholders::_1, t, time_str, bufsize));
 }
 
+bool ButtonCenteredOnLine(const char* label, float alignment = 0.5f)
+{
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    float size = ImGui::CalcTextSize(label).x + style.FramePadding.x * 2.0f;
+    float avail = ImGui::GetContentRegionAvail().x;
+
+    float off = (avail - size) * alignment;
+    if (off > 0.0f)
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
+
+    return ImGui::Button(label);
+}
+
 void guiFunction(AppState& appState)
 {
     static bool first_time = true;
@@ -117,6 +162,25 @@ void guiFunction(AppState& appState)
     ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
     ImGui::Text(time_str);
     ImGui::PopFont();
+
+
+    if (!appState.myAppSettings.counting)
+    {
+        if (ButtonCenteredOnLine("Start"))
+        {
+            appState.myAppSettings.counting = true;
+            std::time_t current = std::time(0);
+            appState.myAppSettings.start_time = current;
+            printf("Counting started!\n");
+            printf("Start time: %s\n", std::ctime(&current));
+        }
+    } else {
+        if (ButtonCenteredOnLine("Stop")) {
+            appState.myAppSettings.counting = false;
+            printf("Counting stopped!\n");
+            printf("Start time: %s\n", std::ctime(&appState.myAppSettings.start_time));
+        }
+    }
 
     first_time = false;
 }

@@ -15,6 +15,7 @@ file(GLOB sources *.hpp *.cpp)
 hello_imgui_add_app(Life-controller-app ${sources})
 target_include_directories(Life-controller-app PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(Life-controller-app PUBLIC Life-controller-core)
+target_link_libraries(Life-controller-app INTERFACE rapidjson)
 
 find_package(asio CONFIG REQUIRED)
 target_link_libraries(Life-controller-app PRIVATE asio asio::asio)
