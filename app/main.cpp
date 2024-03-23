@@ -6,7 +6,9 @@
 #include "config.hpp"
 
 #include <ctime>
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "hello_imgui/hello_imgui.h"
+#include "imgui_internal.h"
 #include <sstream>
 
 #include "rapidjson/document.h"
@@ -32,6 +34,7 @@ struct AppState
     ImFont* EmojiFont = nullptr;
     ImFont* LargeIconFont = nullptr;
     ImFont* TimeFont = nullptr;
+    ImFont* TimeFontSmall = nullptr;
 };
 
 std::string MyAppSettingsToString(const MyAppSettings& myAppSettings)
@@ -96,6 +99,8 @@ void LoadFonts(AppState& appState) // This is called by runnerParams.callbacks.L
 
     appState.TimeFont = HelloImGui::LoadFont("fonts/Roboto/Roboto-BoldItalic.ttf", 80.f);
 
+    appState.TimeFontSmall = HelloImGui::LoadFont("fonts/Roboto/Roboto-BoldItalic.ttf", 30.f);
+
     HelloImGui::FontLoadingParams fontLoadingParamsEmoji;
     fontLoadingParamsEmoji.useFullGlyphRange = true;
     appState.EmojiFont = HelloImGui::LoadFont("fonts/NotoEmoji-Regular.ttf", 24.f, fontLoadingParamsEmoji);
@@ -138,15 +143,36 @@ bool ButtonCenteredOnLine(const char* label, float alignment = 0.5f)
     return ImGui::Button(label);
 }
 
+void TextCenteredOnLine(const char* label, float alignment = 0.5f)
+{
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    float size = ImGui::CalcTextSize(label).x + style.FramePadding.x * 2.0f;
+    float avail = ImGui::GetContentRegionAvail().x;
+
+    float off = (avail - size) * alignment;
+    if (off > 0.0f)
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
+
+    ImGui::Text(label);
+    return;
+}
+
+void AlignForWidth(float width, float alignment = 0.5f)
+{
+    ImGuiStyle& style = ImGui::GetStyle();
+    float avail = ImGui::GetContentRegionAvail().x;
+    float off = (avail - width) * alignment;
+    if (off > 0.0f)
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
+}
+
+enum SCREEN_STATE { Time_S, Timer_S, Setting_S, Timer_End_S, Event_Edit_S };
+
 void guiFunction(AppState& appState)
 {
     static bool first_time = true;
-    ImGui::PushFont(appState.TitleFont);
-    auto device_name = appState.myAppSettings.device_name;
-    ImGui::Text("device name");
-    ImGui::SameLine();
-    ImGui::InputText("##", device_name, sizeof(device_name));
-    ImGui::PopFont();
+    static enum SCREEN_STATE current_screen = Time_S;
 
     static char time_str[20] = "11:31:00";
     if (first_time)
@@ -156,30 +182,140 @@ void guiFunction(AppState& appState)
         static asio::steady_timer t(io_service, asio::chrono::seconds(1));
         t.async_wait(std::bind(updateTime, std::placeholders::_1, &t, time_str, sizeof(time_str)));
     }
-    ImGui::PushFont(appState.TimeFont);
-    auto windowWidth = ImGui::GetWindowSize().x;
-    static auto textWidth = ImGui::CalcTextSize("00:00:00").x;
-    ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-    ImGui::Text(time_str);
-    ImGui::PopFont();
 
+    ImGui::NewLine();
 
-    if (!appState.myAppSettings.counting)
+    if (ImGui::BeginPopupContextItem("ContextMenu"))
     {
-        if (ButtonCenteredOnLine("Start"))
+        ImGui::PushFont(appState.TitleFont);
+        if (ImGui::Selectable("Settings"))
         {
-            appState.myAppSettings.counting = true;
-            std::time_t current = std::time(0);
-            appState.myAppSettings.start_time = current;
-            printf("Counting started!\n");
-            printf("Start time: %s\n", std::ctime(&current));
+            current_screen = Setting_S;
         }
-    } else {
-        if (ButtonCenteredOnLine("Stop")) {
-            appState.myAppSettings.counting = false;
-            printf("Counting stopped!\n");
-            printf("Start time: %s\n", std::ctime(&appState.myAppSettings.start_time));
+        ImGui::PopFont();
+        ImGui::EndPopup();
+    }
+
+    switch (current_screen)
+    {
+    case Time_S:
+        {
+            ImVec2 dragSize(ImGui::GetMainViewport()->Size.x, ImGui::GetFontSize() * 1.5f);
+            ImRect dragArea(ImGui::GetMainViewport()->Pos, ImGui::GetMainViewport()->Pos + dragSize);
+            ImVec2 mousePos = ImGui::GetMousePos();
+
+            if (dragArea.Contains(mousePos) && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+            {
+                ImGui::OpenPopup("ContextMenu");
+            }
+            ImGui::PushFont(appState.TimeFont);
+            auto windowWidth = ImGui::GetWindowSize().x;
+            static auto textWidth = ImGui::CalcTextSize("00:00:00").x;
+            ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
+            ImGui::Text(time_str);
+            ImGui::PopFont();
+            if (ButtonCenteredOnLine("Start"))
+            {
+                appState.myAppSettings.counting = true;
+                current_screen = Timer_S;
+                std::time_t current = std::time(0);
+                appState.myAppSettings.start_time = current;
+                printf("Counting started!\n");
+                printf("Start time: %s\n", std::ctime(&current));
+            }
         }
+        break;
+    case Timer_S:
+        {
+            ImGui::PushFont(appState.TimeFontSmall);
+            auto windowWidth = ImGui::GetWindowSize().x;
+            static auto textWidthSmall = ImGui::CalcTextSize("00:00:00").x;
+            ImGui::SetCursorPosX((windowWidth - textWidthSmall) * 0.5f);
+            ImGui::Text(time_str);
+            ImGui::PopFont();
+            ImGui::PushFont(appState.TimeFont);
+            static auto textWidth = ImGui::CalcTextSize("00:00:00").x;
+            ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
+            ImGui::Text(time_str);
+            ImGui::PopFont();
+            if (ButtonCenteredOnLine("Stop"))
+            {
+                appState.myAppSettings.counting = false;
+                current_screen = Timer_End_S;
+                printf("Counting stopped!\n");
+                printf("Start time: %s\n", std::ctime(&appState.myAppSettings.start_time));
+            }
+        }
+        break;
+    case Setting_S:
+        {
+            static bool first_time = true;
+            ImGui::PushFont(appState.TitleFont);
+            static char device_name[256] = "";
+            if (first_time)
+            {
+                strcpy(device_name, appState.myAppSettings.device_name);
+            }
+            first_time = false;
+            ImGui::Text("device name");
+            ImGui::SameLine();
+            ImGui::InputText("##", device_name, sizeof(device_name));
+
+            ImGuiStyle& style = ImGui::GetStyle();
+            float width = 0.0f;
+            width += HelloImGui::EmSize(5.0f);
+            width += style.ItemSpacing.x;
+            width += HelloImGui::EmSize(5.0f);
+            width += style.ItemSpacing.x;
+            width += HelloImGui::EmSize(5.0f);
+            AlignForWidth(width);
+
+            if (ImGui::Button("OK", HelloImGui::EmToVec2(5.0f, 0.0f)))
+            {
+                strcpy(appState.myAppSettings.device_name, device_name);
+                current_screen = Time_S;
+                first_time = true;
+            }
+            ImGui::SameLine(0, HelloImGui::EmSize(5.0f));
+            if (ImGui::Button("CANCEL", HelloImGui::EmToVec2(5.0f, 0.0f)))
+            {
+                current_screen = Time_S;
+                first_time = true;
+            }
+            ImGui::PopFont();
+        }
+        break;
+    case Timer_End_S:
+        {
+            ImGui::PushFont(appState.TitleFont);
+            TextCenteredOnLine("Timer ended!");
+
+            ImGuiStyle& style = ImGui::GetStyle();
+            float width = 0.0f;
+            width += HelloImGui::EmSize(5.0f);
+            width += style.ItemSpacing.x;
+            width += HelloImGui::EmSize(5.0f);
+            width += style.ItemSpacing.x;
+            width += HelloImGui::EmSize(5.0f);
+            AlignForWidth(width);
+
+            if (ImGui::Button("STORE", HelloImGui::EmToVec2(5.0f, 0.0f)))
+            {
+                current_screen = Time_S;
+                first_time = true;
+            }
+            ImGui::SameLine(0, HelloImGui::EmSize(5.0f));
+            if (ImGui::Button("CANCEL", HelloImGui::EmToVec2(5.0f, 0.0f)))
+            {
+                current_screen = Time_S;
+                first_time = true;
+            }
+
+            ImGui::PopFont();
+        }
+        break;
+    default:
+        break;
     }
 
     first_time = false;
