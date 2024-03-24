@@ -4,6 +4,7 @@
 #include <action.hpp>
 #include <log_eval.hpp>
 #include "config.hpp"
+#include <common.hpp>
 
 #include <ctime>
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -129,6 +130,20 @@ void updateTime(const asio::error_code& ec, asio::steady_timer* t, char* time_st
     t->async_wait(std::bind(updateTime, std::placeholders::_1, t, time_str, bufsize));
 }
 
+void updateTimer(const asio::error_code& ec, asio::steady_timer* t, std::time_t start_time, char* time_str, size_t bufsize)
+{
+    if (ec)
+    {
+        std::cout << "timer error: " << ec.message() << "\n";
+        return;
+    }
+    auto duaration_str = get_duration_str(start_time, std::time(0));
+    strcpy(time_str, duaration_str.c_str());
+    printf("timer:%s\n", time_str);
+    t->expires_at(t->expiry() + asio::chrono::seconds(1));
+    t->async_wait(std::bind(updateTimer, std::placeholders::_1, t, start_time, time_str, bufsize));
+}
+
 bool ButtonCenteredOnLine(const char* label, float alignment = 0.5f)
 {
     ImGuiStyle& style = ImGui::GetStyle();
@@ -227,6 +242,17 @@ void guiFunction(AppState& appState)
         break;
     case Timer_S:
         {
+            static bool first_time = true;
+            static char timer_str[20] = "00:00:00";
+            static asio::steady_timer t(io_service, asio::chrono::seconds(1));
+            if (first_time)
+            {
+                std::time_t start_time = std::time(0);
+                t.expires_from_now(asio::chrono::seconds(1));
+                t.async_wait(std::bind(updateTimer, std::placeholders::_1, &t, start_time, timer_str, sizeof(timer_str)));
+            }
+            first_time = false;
+
             ImGui::PushFont(appState.TimeFontSmall);
             auto windowWidth = ImGui::GetWindowSize().x;
             static auto textWidthSmall = ImGui::CalcTextSize("00:00:00").x;
@@ -236,7 +262,7 @@ void guiFunction(AppState& appState)
             ImGui::PushFont(appState.TimeFont);
             static auto textWidth = ImGui::CalcTextSize("00:00:00").x;
             ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-            ImGui::Text(time_str);
+            ImGui::Text(timer_str);
             ImGui::PopFont();
             if (ButtonCenteredOnLine("Stop"))
             {
@@ -244,6 +270,8 @@ void guiFunction(AppState& appState)
                 current_screen = Timer_End_S;
                 printf("Counting stopped!\n");
                 printf("Start time: %s\n", std::ctime(&appState.myAppSettings.start_time));
+                t.cancel();
+                first_time = true;
             }
         }
         break;
