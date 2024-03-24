@@ -303,11 +303,12 @@ void AlignForWidth(float width, float alignment = 0.5f)
 
 enum SCREEN_STATE { Time_S, Timer_S, Setting_S, Timer_End_S, Event_Edit_S };
 
-void guiFunction(AppState& appState, bool &appShallExit)
+void guiFunction(AppState& appState)
 {
+    static tray_and_menu t;
     if (tray_and_menu::loop_tray() == -1)
     {
-        appShallExit = true;
+        HelloImGui::GetRunnerParams()->appShallExit = true;
     }
     static bool first_time = true;
     static enum SCREEN_STATE current_screen = Time_S;
@@ -490,8 +491,6 @@ int main(int , char *[]) {
     do_event_log(start, end, "test", "test");
     eval_log();
 
-    tray_and_menu t;
-
     HelloImGui::RunnerParams runnerParams;
     runnerParams.appWindowParams.windowTitle = "Life-controller";
     runnerParams.imGuiWindowParams.menuAppTitle = "Docking Demo";
@@ -526,7 +525,7 @@ int main(int , char *[]) {
         ImGui::GetStyle().ItemSpacing = ImVec2(6.f, 4.f);
     };
 
-    runnerParams.callbacks.ShowGui =  [&] { guiFunction(appState, runnerParams.appShallExit); };
+    runnerParams.callbacks.ShowGui =  [&] { guiFunction(appState); };
 
     runnerParams.iniFolderType = HelloImGui::IniFolderType::AppExecutableFolder;
 
