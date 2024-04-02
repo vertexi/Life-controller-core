@@ -17,11 +17,15 @@
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
 
+#include <GLFW/glfw3.h>
+
 struct MyAppSettings
 {
     char device_name[256] = "windows";
     bool counting = false;
     std::time_t start_time = 0;
+
+    bool always_on_top = false;
 };
 
 #include "asio.hpp"
@@ -165,10 +169,12 @@ std::string MyAppSettingsToString(const MyAppSettings& myAppSettings)
     rapidjson::Value deviceName(myAppSettings.device_name, allocator);
     rapidjson::Value counting(myAppSettings.counting);
     rapidjson::Value startTime((int64_t)myAppSettings.start_time);
+    rapidjson::Value always_on_top(myAppSettings.always_on_top);
 
     d.AddMember("deviceName", deviceName, allocator);
     d.AddMember("counting", counting, allocator);
     d.AddMember("startTime", startTime, allocator);
+    d.AddMember("always_on_top", always_on_top, allocator);
 
     rapidjson::StringBuffer buffer;
     rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
@@ -193,6 +199,10 @@ MyAppSettings StringToMyAppSettings(const std::string& s)
         if (d.HasMember("startTime"))
         {
             myAppSettings.start_time = d["startTime"].GetInt64();
+        }
+        if (d.HasMember("always_on_top"))
+        {
+            myAppSettings.always_on_top = d["always_on_top"].GetBool();
         }
     }
     return myAppSettings;
@@ -316,6 +326,7 @@ void guiFunction(AppState& appState)
     static char time_str[20] = "11:31:00";
     if (first_time)
     {
+        glfwSetWindowAttrib(glfwGetCurrentContext(), GLFW_FLOATING, appState.myAppSettings.always_on_top);
         std::time_t now = std::time(0);
         std::strftime(time_str, 20, "%H:%M:%S", std::localtime(&now));
         static asio::steady_timer t(io_service, asio::chrono::seconds(1));
@@ -403,7 +414,14 @@ void guiFunction(AppState& appState)
     case Setting_S:
         {
             static bool first_time = true;
+            static bool always_on_top = appState.myAppSettings.always_on_top;
             ImGui::PushFont(appState.TitleFont);
+            ImGui::Checkbox("Always on top", &always_on_top);
+            if (always_on_top != appState.myAppSettings.always_on_top)
+            {
+                glfwSetWindowAttrib(glfwGetCurrentContext(), GLFW_FLOATING, always_on_top);
+                appState.myAppSettings.always_on_top = always_on_top;
+            }
             static char device_name[256] = "";
             if (first_time)
             {
@@ -494,7 +512,7 @@ int main(int , char *[]) {
     HelloImGui::RunnerParams runnerParams;
     runnerParams.appWindowParams.windowTitle = "Life-controller";
     runnerParams.imGuiWindowParams.menuAppTitle = "Docking Demo";
-    runnerParams.appWindowParams.windowGeometry.size = {1200, 1000};
+    runnerParams.appWindowParams.windowGeometry.size = {375, 142};
     runnerParams.appWindowParams.restorePreviousGeometry = true;
 
     runnerParams.appWindowParams.borderless = true;
