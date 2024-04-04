@@ -1194,6 +1194,32 @@ public:
 
     return true;
   }
+  template <class... ColType> bool read_row_string(char* line, ColType &... cols) {
+    static_assert(sizeof...(ColType) >= column_count,
+                  "not enough columns specified");
+    static_assert(sizeof...(ColType) <= column_count,
+                  "too many columns specified");
+    try {
+      try {
+        if (!line || comment_policy::is_comment(line))
+        {
+          return false;
+        }
+
+        detail::parse_line<trim_policy, quote_policy>(line, row, col_order);
+
+        parse_helper(0, cols...);
+      } catch (error::with_file_name &err) {
+        err.set_file_name(in.get_truncated_file_name());
+        throw;
+      }
+    } catch (error::with_file_line &err) {
+      err.set_file_line(in.get_file_line());
+      throw;
+    }
+
+    return true;
+  }
 };
 } // namespace io
 #endif

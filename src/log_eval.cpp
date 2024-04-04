@@ -141,32 +141,33 @@ int create_new_event(Document::AllocatorType& allocator, Value& events, std::str
     return 0;
 }
 
-int eval_log()
+Document d;
+
+int eval_log_init(CSVREADER_CLASS &csv_reader)
 {
-    io::CSVReader<7> in(LOGFILE_NAME, std::unique_ptr<io::ByteSourceBase>(new FileSourceBase(LOGFILE_NAME)));
-    in.set_header("action",
+    d.SetObject();
+    csv_reader.set_header("action",
                  "start_time",
                  "duration",
                  "event_name",
                  "event_data",
                  "start_time_t",
                  "end_time_t");
-    std::string action;
-    std::string start_time;
-    std::string end_time;
-    std::string duration;
-    std::string event_name;
-    std::string event_data;
-    std::time_t start_time_t;
-    std::time_t end_time_t;
+    return true;
+}
 
-    Document d;
-    d.SetObject();
+int eval_log_line(std::string action
+    ,std::string start_time
+    ,std::string duration
+    ,std::string event_name
+    ,std::string event_data
+    ,std::time_t start_time_t
+    ,std::time_t end_time_t)
+{
     auto& allocator = d.GetAllocator();
-    Value events(kObjectType);
-
-    while(in.read_row(action, start_time, duration, event_name, event_data, start_time_t, end_time_t))
+    if (d.HasMember("events"))
     {
+        auto events = d["events"].GetObject();
         if(action == "CREATE") {
             create_new_event(allocator, events, event_name, event_data, start_time_t, events.HasMember(event_name.c_str()));
         } else if (action == "DO") {
@@ -194,12 +195,51 @@ int eval_log()
             debug_printf("UNKNOWN\n");
         }
     }
+    return 0;
+}
 
-    d.AddMember("events", events, allocator);
+int eval_log(CSVREADER_CLASS &csv_reader)
+{
+    std::string action;
+    std::string start_time;
+    std::string duration;
+    std::string event_name;
+    std::string event_data;
+    std::time_t start_time_t;
+    std::time_t end_time_t;
+
+    auto& allocator = d.GetAllocator();
+    Value events_init(kObjectType);
+    d.AddMember("events", events_init, allocator);
+    auto events = d["events"].GetObject();
+
+    while(csv_reader.read_row(action, start_time, duration, event_name, event_data, start_time_t, end_time_t))
+    {
+        eval_log_line(action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
+    }
 
     event_eval_total_duration(d);
 
     print_json(d);
 
+    return 0;
+}
+
+int eval_log_line_str(CSVREADER_CLASS &csv_reader, char* line)
+{
+    std::string action;
+    std::string start_time;
+    std::string end_time;
+    std::string duration;
+    std::string event_name;
+    std::string event_data;
+    std::time_t start_time_t;
+    std::time_t end_time_t;
+    csv_reader.read_row_string(line, action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
+    eval_log_line(action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
+
+
+    printf("........................................\n");
+    print_json(d);
     return 0;
 }

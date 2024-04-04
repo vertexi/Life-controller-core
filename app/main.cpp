@@ -359,10 +359,7 @@ void guiFunction(AppState& appState)
                 ImGui::OpenPopup("ContextMenu");
             }
             ImGui::PushFont(appState.TimeFont);
-            auto windowWidth = ImGui::GetWindowSize().x;
-            static auto textWidth = ImGui::CalcTextSize("00:00:00").x;
-            ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-            ImGui::Text(time_str);
+            TextCenteredOnLine(time_str);
             ImGui::PopFont();
             if (ButtonCenteredOnLine("Start"))
             {
@@ -389,15 +386,10 @@ void guiFunction(AppState& appState)
             first_time = false;
 
             ImGui::PushFont(appState.TimeFontSmall);
-            auto windowWidth = ImGui::GetWindowSize().x;
-            static auto textWidthSmall = ImGui::CalcTextSize("00:00:00").x;
-            ImGui::SetCursorPosX((windowWidth - textWidthSmall) * 0.5f);
-            ImGui::Text(time_str);
+            TextCenteredOnLine(time_str);
             ImGui::PopFont();
             ImGui::PushFont(appState.TimeFont);
-            static auto textWidth = ImGui::CalcTextSize("00:00:00").x;
-            ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-            ImGui::Text(timer_str);
+            TextCenteredOnLine(timer_str);
             ImGui::PopFont();
             if (ButtonCenteredOnLine("Stop"))
             {
@@ -507,12 +499,16 @@ int main(int , char *[]) {
     create_goal_log("test", true, 99999, start, end);
     create_goal_log("test", false, 9999999, start, end);
     do_event_log(start, end, "test", "test");
-    eval_log();
+    io::CSVReader<7> csv_reader(LOGFILE_NAME, std::unique_ptr<io::ByteSourceBase>(new FileSourceBase(LOGFILE_NAME)));
+    eval_log_init(csv_reader);
+    eval_log(csv_reader);
+    char temp_str[100] = R"(DO      , Thu Apr  4 19:08:41 2024, 10:00:00, test, test, 1712228921, 1712264921)";
+    eval_log_line_str(csv_reader, temp_str);
 
     HelloImGui::RunnerParams runnerParams;
     runnerParams.appWindowParams.windowTitle = "Life-controller";
     runnerParams.imGuiWindowParams.menuAppTitle = "Docking Demo";
-    runnerParams.appWindowParams.windowGeometry.size = {375, 142};
+    runnerParams.appWindowParams.windowGeometry.size = {412, 175};
     runnerParams.appWindowParams.restorePreviousGeometry = true;
 
     runnerParams.appWindowParams.borderless = true;

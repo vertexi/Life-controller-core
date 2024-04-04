@@ -89,14 +89,5 @@
                 "HELLOIMGUI_USE_IMGUI_CMAKE_PACKAGE": "OFF"
             }
         }
-    ],
-    "buildPresets": [
-        {
-            "name": "release",
-            "description": "",
-            "displayName": "",
-            "configurePreset": "build_default_glfw",
-            "configuration": "Release"
-        }
     ]
 }
