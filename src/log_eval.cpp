@@ -1,4 +1,5 @@
 #include <string>
+#include <set>
 #include "include/fast-cpp-csv-parser/csv.h"
 #include "include/rapidjson/document.h"
 #include "include/rapidjson/writer.h"
@@ -19,8 +20,6 @@ int print_json(Document& d)
     debug_printf("%s\n", buffer.GetString());
     return 0;
 }
-
-
 
 int event_eval_total_duration(Document& d)
 {
@@ -154,6 +153,18 @@ int eval_log_init(CSVREADER_CLASS &csv_reader)
                  "start_time_t",
                  "end_time_t");
     return true;
+}
+
+int get_event_names(std::set<std::string>& event_names)
+{
+    auto& events = d["events"];
+    for (Value::ConstMemberIterator itr = events.MemberBegin();
+    itr != events.MemberEnd(); ++itr)
+    {
+        auto event_name = itr->name.GetString();
+        event_names.insert(event_name);
+    }
+    return 0;
 }
 
 int eval_log_line(std::string action

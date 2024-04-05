@@ -268,7 +268,6 @@ void updateTimer(const asio::error_code& ec, asio::steady_timer* t, std::time_t 
     }
     auto duaration_str = get_duration_str(start_time, std::time(0));
     strcpy(time_str, duaration_str.c_str());
-    printf("timer:%s\n", time_str);
     t->expires_at(t->expiry() + asio::chrono::seconds(1));
     t->async_wait(std::bind(updateTimer, std::placeholders::_1, t, start_time, time_str, bufsize));
 }
@@ -331,6 +330,11 @@ void guiFunction(AppState& appState)
         std::strftime(time_str, 20, "%H:%M:%S", std::localtime(&now));
         static asio::steady_timer t(io_service, asio::chrono::seconds(1));
         t.async_wait(std::bind(updateTime, std::placeholders::_1, &t, time_str, sizeof(time_str)));
+
+        if (appState.myAppSettings.counting)
+        {
+            current_screen = Timer_S;
+        }
     }
 
     ImGui::NewLine();
@@ -380,6 +384,10 @@ void guiFunction(AppState& appState)
             if (first_time)
             {
                 std::time_t start_time = std::time(0);
+                if (appState.myAppSettings.counting)
+                {
+                    start_time = appState.myAppSettings.start_time;
+                }
                 t.expires_from_now(asio::chrono::seconds(1));
                 t.async_wait(std::bind(updateTimer, std::placeholders::_1, &t, start_time, timer_str, sizeof(timer_str)));
             }
@@ -475,6 +483,18 @@ void guiFunction(AppState& appState)
             }
 
             ImGui::PopFont();
+        }
+        break;
+    case Event_Edit_S:
+        {
+            // TODO: implement event edit screen
+            static bool first_time = true;
+            static std::set<std::string> event_names;
+            get_event_names(event_names);
+            for (auto& event_name : event_names)
+            {
+                printf("event name: %s\n", event_name.c_str());
+            }
         }
         break;
     default:
