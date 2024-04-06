@@ -24,6 +24,7 @@ struct MyAppSettings
     char device_name[256] = "windows";
     bool counting = false;
     std::time_t start_time = 0;
+    std::time_t stop_time = 0;
 
     bool always_on_top = false;
 };
@@ -401,8 +402,11 @@ void guiFunction(AppState& appState)
             ImGui::PopFont();
             if (ButtonCenteredOnLine("Stop"))
             {
+                // TODO: stop continoue mechanism
+                // TODO: timer status transfer to settings (start time end time)
                 strcpy(timer_str, "00:00:00");
                 appState.myAppSettings.counting = false;
+                appState.myAppSettings.stop_time = std::time(0);
                 current_screen = Timer_End_S;
                 printf("Counting stopped!\n");
                 printf("Start time: %s\n", std::ctime(&appState.myAppSettings.start_time));
@@ -458,10 +462,75 @@ void guiFunction(AppState& appState)
         break;
     case Timer_End_S:
         {
-            ImGui::PushFont(appState.TitleFont);
-            TextCenteredOnLine("Timer ended!");
+            static bool first_time = true;
+            static std::time_t duration_time, duration_sec, duration_min, duration_hour = 0;
+            static std::set<std::string> event_names;
+            static auto choosen_event = event_names.begin();
 
+            auto reset_duration_time = [&]()
+            {
+                duration_time = appState.myAppSettings.stop_time - appState.myAppSettings.start_time;
+                duration_sec = duration_time;
+                duration_min = duration_sec / 60;
+                duration_sec = duration_sec % 60;
+                duration_hour = duration_min / 60;
+                duration_min = duration_min % 60;
+            };
+            if (first_time)
+            {
+                get_event_names(event_names);
+                choosen_event = event_names.begin();
+                reset_duration_time();
+            }
+            first_time = false;
+
+            const float drag_speed = 1.0f;
+            const ImU8 hour_min = 0;
+            const ImU8 hour_max = 24;
+            const ImU8 min_min = 0;
+            const ImU8 min_max = 60;
+
+            ImGui::PushFont(appState.TimeFontSmall);
+            static auto stopTimeTextWidth = ImGui::CalcTextSize("88m").x;
             ImGuiStyle& style = ImGui::GetStyle();
+            float avail = ImGui::GetContentRegionAvail().x;
+            static float itemsWidth = (stopTimeTextWidth + style.FramePadding.x) * 2 + ImGui::CalcTextSize("Duration ").x + ImGui::CalcTextSize("reset").x + style.FramePadding.x * 4;
+            float off = (avail - itemsWidth) * 0.5f;
+            if (off > 0.0f) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
+            ImGui::Text("Duration ");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(stopTimeTextWidth);
+            ImGui::DragScalar("##stop_hour", ImGuiDataType_U8, &duration_hour, drag_speed, &hour_min, &hour_max, "%dh");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(stopTimeTextWidth);
+            ImGui::DragScalar("##stop_min", ImGuiDataType_U8, &duration_min, drag_speed, &min_min, &min_max, "%dm");
+            ImGui::SameLine();
+            if (ImGui::Button("reset"))
+            {
+                reset_duration_time();
+            }
+
+            const char* combo_preview_value = event_names.empty() ? "None" : choosen_event->c_str();
+            ImGui::Text("event name");
+            ImGui::SameLine();
+            if (ImGui::BeginCombo("##event name", combo_preview_value))
+            {
+                for (auto it = event_names.begin(); it != event_names.end(); it++) {
+                    const bool is_selected = (choosen_event == it);
+                    if (ImGui::Selectable(it->c_str(), is_selected))
+                        choosen_event = it;
+
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+
+            ImGui::PopFont();
+
+            ImGui::PushFont(appState.TitleFont);
+
             float width = 0.0f;
             width += HelloImGui::EmSize(5.0f);
             width += style.ItemSpacing.x;
