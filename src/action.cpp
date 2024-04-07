@@ -4,8 +4,19 @@
 #include "common.hpp"
 #include "io.hpp"
 
+namespace life_controller_core
+{
+    std::string last_append_line = "";
+
+    std::string get_last_append_line() {
+        return last_append_line;
+    }
+}
+
 int append_log(std::string filename, std::string data)
 {
+    life_controller_core::last_append_line = data;
+    life_controller_core::last_append_line.pop_back();
     append_file(filename, data);
     return 0;
 }

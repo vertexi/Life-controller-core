@@ -156,6 +156,8 @@ struct AppState
 {
     MyAppSettings myAppSettings;
 
+    CSVREADER_CLASS *csv_reader;
+
     ImFont* TitleFont = nullptr;
     ImFont* ColorFont = nullptr;
     ImFont* EmojiFont = nullptr;
@@ -352,6 +354,7 @@ void guiFunction(AppState& appState)
         ImGui::PopFont();
         ImGui::EndPopup();
     }
+    ImGuiStyle& style = ImGui::GetStyle();
 
     switch (current_screen)
     {
@@ -365,6 +368,8 @@ void guiFunction(AppState& appState)
             {
                 ImGui::OpenPopup("ContextMenu");
             }
+            float avail = ImGui::GetContentRegionAvail().y;
+            ImGui::SetCursorPosY(avail * 0.3f + style.FramePadding.y);
             ImGui::PushFont(appState.TimeFont);
             TextCenteredOnLine(time_str);
             ImGui::PopFont();
@@ -400,6 +405,8 @@ void guiFunction(AppState& appState)
             }
             first_time = false;
 
+            float avail = ImGui::GetContentRegionAvail().y;
+            ImGui::SetCursorPosY(avail * 0.3f);
             ImGui::PushFont(appState.TimeFontSmall);
             TextCenteredOnLine(time_str);
             ImGui::PopFont();
@@ -444,7 +451,6 @@ void guiFunction(AppState& appState)
             ImGui::SameLine();
             ImGui::InputText("##", device_name, sizeof(device_name));
 
-            ImGuiStyle& style = ImGui::GetStyle();
             float width = 0.0f;
             width += HelloImGui::EmSize(5.0f);
             width += style.ItemSpacing.x;
@@ -472,6 +478,8 @@ void guiFunction(AppState& appState)
         {
             static bool first_time = true;
             static bool markdownEdit = true;
+            static bool event_create = false;
+            static char event_name[256] = "";
             static char MarkdownInput[1024] = "";
             static std::time_t duration_time, duration_sec, duration_min, duration_hour = 0;
             static std::set<std::string> event_names;
@@ -489,6 +497,7 @@ void guiFunction(AppState& appState)
             if (first_time)
             {
                 markdownEdit = true;
+                event_create = false;
                 get_event_names(event_names);
                 choosen_event = event_names.begin();
                 reset_duration_time();
@@ -526,21 +535,36 @@ void guiFunction(AppState& appState)
             ImGui::Text("Event name");
             ImGui::SameLine();
             ImGui::SetNextItemWidth(HelloImGui::EmSize(7.0f));
-            if (ImGui::BeginCombo("##event name", combo_preview_value))
+            if (!event_create)
             {
-                for (auto it = event_names.begin(); it != event_names.end(); it++) {
-                    const bool is_selected = (choosen_event == it);
-                    if (ImGui::Selectable(it->c_str(), is_selected))
-                        choosen_event = it;
+                if (ImGui::BeginCombo("##event name", combo_preview_value))
+                {
+                    for (auto it = event_names.begin(); it != event_names.end(); it++) {
+                        const bool is_selected = (choosen_event == it);
+                        if (ImGui::Selectable(it->c_str(), is_selected))
+                            choosen_event = it;
 
-                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                    if (is_selected)
-                        ImGui::SetItemDefaultFocus();
+                        // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                        if (is_selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
                 }
-                ImGui::EndCombo();
+                ImGui::SameLine();
+                if(ImGui::Button("Create", ImVec2(ImGui::CalcTextSize("Create").x + style.FramePadding.x*2, 0.0f)))
+                {
+                    event_create = true;
+                }
+            } else {
+                ImGui::InputText("##event name", event_name, sizeof(event_name));
+                ImGui::SameLine();
+                if(ImGui::Button("Confirm", ImVec2(ImGui::CalcTextSize("Confirm").x + style.FramePadding.x*2, 0.0f)))
+                {
+                    create_event_log(event_name, MarkdownInput);
+                    eval_log_line_str((*appState.csv_reader), (char *)life_controller_core::get_last_append_line().c_str());
+                    first_time = true;
+                }
             }
-            ImGui::SameLine();
-            ImGui::Button("Create", ImVec2(ImGui::CalcTextSize("Create").x + style.FramePadding.x*2, 0.0f));
 
             if (markdownEdit)
             {
@@ -569,7 +593,6 @@ void guiFunction(AppState& appState)
             {
                 current_screen = Time_S;
                 first_time = true;
-                markdownEdit = true;
                 // do_event_log(appState.myAppSettings.stop_time, appState.myAppSettings.stop_time, )
             }
             ImGui::SameLine(0, HelloImGui::EmSize(3.0f));
@@ -577,7 +600,6 @@ void guiFunction(AppState& appState)
             {
                 current_screen = Time_S;
                 first_time = true;
-                markdownEdit = true;
             }
 
             ImGui::PopFont();
@@ -618,6 +640,7 @@ int main(int , char *[]) {
     create_goal_log("test", false, 9999999, start, end);
     do_event_log(start, end, "test", "test");
     io::CSVReader<7> csv_reader(LOGFILE_NAME, std::unique_ptr<io::ByteSourceBase>(new FileSourceBase(LOGFILE_NAME)));
+    appState.csv_reader = &csv_reader;
     eval_log_init(csv_reader);
     eval_log(csv_reader);
     char temp_str[100] = R"(DO      , Thu Apr  4 19:08:41 2024, 10:00:00, test, test, 1712228921, 1712264921)";
@@ -626,7 +649,7 @@ int main(int , char *[]) {
     HelloImGui::RunnerParams runnerParams;
     runnerParams.appWindowParams.windowTitle = "Life-controller";
     runnerParams.imGuiWindowParams.menuAppTitle = "Docking Demo";
-    runnerParams.appWindowParams.windowGeometry.size = {412, 175};
+    runnerParams.appWindowParams.windowGeometry.size = {465, 345};
     runnerParams.appWindowParams.restorePreviousGeometry = true;
 
     runnerParams.appWindowParams.borderless = true;
@@ -676,6 +699,10 @@ int main(int , char *[]) {
     addOnsParams.withNodeEditor = true;
     addOnsParams.withImplot = true;
     addOnsParams.withTexInspect = true;
+
+    ImGuiMd::MarkdownOptions markdownOptions;
+    markdownOptions.fontOptions.regularSize = 24.0f;
+    addOnsParams.withMarkdownOptions = markdownOptions;
 
     ImmApp::Run(runnerParams, addOnsParams);
 

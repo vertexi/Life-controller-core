@@ -145,6 +145,9 @@ Document d;
 int eval_log_init(CSVREADER_CLASS &csv_reader)
 {
     d.SetObject();
+    auto& allocator = d.GetAllocator();
+    Value events_init(kObjectType);
+    d.AddMember("events", events_init, allocator);
     csv_reader.set_header("action",
                  "start_time",
                  "duration",
@@ -219,11 +222,6 @@ int eval_log(CSVREADER_CLASS &csv_reader)
     std::time_t start_time_t;
     std::time_t end_time_t;
 
-    auto& allocator = d.GetAllocator();
-    Value events_init(kObjectType);
-    d.AddMember("events", events_init, allocator);
-    auto events = d["events"].GetObject();
-
     while(csv_reader.read_row(action, start_time, duration, event_name, event_data, start_time_t, end_time_t))
     {
         eval_log_line(action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
@@ -249,8 +247,5 @@ int eval_log_line_str(CSVREADER_CLASS &csv_reader, char* line)
     csv_reader.read_row_string(line, action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
     eval_log_line(action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
 
-
-    printf("........................................\n");
-    print_json(d);
     return 0;
 }
