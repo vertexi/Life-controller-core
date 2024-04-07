@@ -45,9 +45,27 @@ if (NOT tray_POPULATED)
     endif ()
 endif ()
 
-add_subdirectory(hello_imgui)
+# Add imgui_bundle
+# =================
+# 1/  Option 1: if you added imgui_bundle in a subfolder, you can add it to your project with:
+if(IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/imgui_bundle)
+    add_subdirectory(imgui_bundle)
+endif()
+
+## 2/  Option 2: simply fetch imgui_bundle during the build
+if (NOT TARGET imgui_bundle)
+    message(STATUS "Fetching imgui_bundle...")
+    include(FetchContent)
+    Set(FETCHCONTENT_QUIET FALSE)
+    FetchContent_Declare(imgui_bundle GIT_REPOSITORY https://github.com/pthom/imgui_bundle.git GIT_TAG main)
+    FetchContent_MakeAvailable(imgui_bundle)
+
+    # Uncomment the next line if you which to also automatically fetch and compile OpenCV for immvision support
+    # set(IMMVISION_FETCH_OPENCV ON)
+endif()
+
 file(GLOB sources *.hpp *.cpp)
-hello_imgui_add_app(Life-controller-app ${sources})
+imgui_bundle_add_app(Life-controller-app ${sources})
 target_include_directories(Life-controller-app PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(Life-controller-app PUBLIC Life-controller-core)
 target_link_libraries(Life-controller-app INTERFACE rapidjson)

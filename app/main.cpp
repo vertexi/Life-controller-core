@@ -8,6 +8,8 @@
 
 #include <ctime>
 #define IMGUI_DEFINE_MATH_OPERATORS
+#include "immapp/immapp.h"
+#include "imgui_md_wrapper.h"
 #include "hello_imgui/hello_imgui.h"
 #include "imgui_internal.h"
 #include <sstream>
@@ -389,6 +391,8 @@ void guiFunction(AppState& appState)
                 {
                     start_time = appState.myAppSettings.start_time;
                 }
+                auto duaration_str = get_duration_str(start_time, std::time(0));
+                strcpy(timer_str, duaration_str.c_str());
                 t.expires_from_now(asio::chrono::seconds(1));
                 t.async_wait(std::bind(updateTimer, std::placeholders::_1, &t, start_time, timer_str, sizeof(timer_str)));
             }
@@ -527,6 +531,22 @@ void guiFunction(AppState& appState)
                 ImGui::EndCombo();
             }
 
+            std::string markdownDemo = R"(
+            # Demo markdown usage
+
+            Let's ask GPT4 to give us some fun programming fortunes in markdown format:
+
+            1. **Bug Hunt**: In the world of software, the best debugger was, is, and will always be a _good night's sleep_.
+
+            2. **Pythonic Wisdom**:
+                > They say if you can't explain something simply, you don't understand it well enough. Well, here's my Python code for simplicity:
+                ```python
+                def explain(thing):
+                    return "It's just a " + thing + ". Nothing fancy!"
+                ```
+            )";
+            ImGuiMd::RenderUnindented(markdownDemo);
+
             ImGui::PopFont();
 
             ImGui::PushFont(appState.TitleFont);
@@ -640,7 +660,15 @@ int main(int , char *[]) {
     //runnerParams.platformBackendType = HelloImGui::PlatformBackendType::Sdl;
     // runnerParams.rendererBackendType = HelloImGui::RendererBackendType::Vulkan;
 
-    HelloImGui::Run(runnerParams); // Note: with ImGuiBundle, it is also possible to use ImmApp::Run(...)
+    // HelloImGui::Run(runnerParams); // Note: with ImGuiBundle, it is also possible to use ImmApp::Run(...)
+
+    ImmApp::AddOnsParams addOnsParams;
+    addOnsParams.withMarkdown = true;
+    addOnsParams.withNodeEditor = true;
+    addOnsParams.withImplot = true;
+    addOnsParams.withTexInspect = true;
+
+    ImmApp::Run(runnerParams, addOnsParams);
 
     return 0;
 }
