@@ -368,6 +368,7 @@ void guiFunction(AppState& appState)
             ImGui::PushFont(appState.TimeFont);
             TextCenteredOnLine(time_str);
             ImGui::PopFont();
+            ImGui::PushFont(appState.TimeFontSmall);
             if (ButtonCenteredOnLine("Start"))
             {
                 appState.myAppSettings.counting = true;
@@ -377,6 +378,7 @@ void guiFunction(AppState& appState)
                 printf("Counting started!\n");
                 printf("Start time: %s\n", std::ctime(&current));
             }
+            ImGui::PopFont();
         }
         break;
     case Timer_S:
@@ -404,6 +406,7 @@ void guiFunction(AppState& appState)
             ImGui::PushFont(appState.TimeFont);
             TextCenteredOnLine(timer_str);
             ImGui::PopFont();
+            ImGui::PushFont(appState.TimeFontSmall);
             if (ButtonCenteredOnLine("Stop"))
             {
                 // TODO: stop continoue mechanism
@@ -417,6 +420,7 @@ void guiFunction(AppState& appState)
                 t.cancel();
                 first_time = true;
             }
+            ImGui::PopFont();
         }
         break;
     case Setting_S:
@@ -467,6 +471,8 @@ void guiFunction(AppState& appState)
     case Timer_End_S:
         {
             static bool first_time = true;
+            static bool markdownEdit = true;
+            static char MarkdownInput[1024] = "";
             static std::time_t duration_time, duration_sec, duration_min, duration_hour = 0;
             static std::set<std::string> event_names;
             static auto choosen_event = event_names.begin();
@@ -482,9 +488,11 @@ void guiFunction(AppState& appState)
             };
             if (first_time)
             {
+                markdownEdit = true;
                 get_event_names(event_names);
                 choosen_event = event_names.begin();
                 reset_duration_time();
+                MarkdownInput[0] = '\0';
             }
             first_time = false;
 
@@ -515,8 +523,9 @@ void guiFunction(AppState& appState)
             }
 
             const char* combo_preview_value = event_names.empty() ? "None" : choosen_event->c_str();
-            ImGui::Text("event name");
+            ImGui::Text("Event name");
             ImGui::SameLine();
+            ImGui::SetNextItemWidth(HelloImGui::EmSize(7.0f));
             if (ImGui::BeginCombo("##event name", combo_preview_value))
             {
                 for (auto it = event_names.begin(); it != event_names.end(); it++) {
@@ -530,45 +539,45 @@ void guiFunction(AppState& appState)
                 }
                 ImGui::EndCombo();
             }
+            ImGui::SameLine();
+            ImGui::Button("Create", ImVec2(ImGui::CalcTextSize("Create").x + style.FramePadding.x*2, 0.0f));
 
-            std::string markdownDemo = R"(
-            # Demo markdown usage
-
-            Let's ask GPT4 to give us some fun programming fortunes in markdown format:
-
-            1. **Bug Hunt**: In the world of software, the best debugger was, is, and will always be a _good night's sleep_.
-
-            2. **Pythonic Wisdom**:
-                > They say if you can't explain something simply, you don't understand it well enough. Well, here's my Python code for simplicity:
-                ```python
-                def explain(thing):
-                    return "It's just a " + thing + ". Nothing fancy!"
-                ```
-            )";
-            ImGuiMd::RenderUnindented(markdownDemo);
-
-            ImGui::PopFont();
-
-            ImGui::PushFont(appState.TitleFont);
+            if (markdownEdit)
+            {
+                ImGui::InputTextMultiline("##Markdown Input", MarkdownInput, sizeof(MarkdownInput), HelloImGui::EmToVec2(40.f, 5.f));
+                if (ButtonCenteredOnLine("Render"))
+                {
+                    markdownEdit = false;
+                }
+            } else {
+                ImGuiMd::RenderUnindented(MarkdownInput);
+                if (ButtonCenteredOnLine("Edit"))
+                {
+                    markdownEdit = true;
+                }
+            }
 
             float width = 0.0f;
-            width += HelloImGui::EmSize(5.0f);
+            width += HelloImGui::EmSize(4.0f);
             width += style.ItemSpacing.x;
-            width += HelloImGui::EmSize(5.0f);
+            width += HelloImGui::EmSize(3.0f);
             width += style.ItemSpacing.x;
-            width += HelloImGui::EmSize(5.0f);
+            width += HelloImGui::EmSize(4.0f);
             AlignForWidth(width);
 
-            if (ImGui::Button("STORE", HelloImGui::EmToVec2(5.0f, 0.0f)))
+            if (ImGui::Button("STORE", HelloImGui::EmToVec2(4.0f, 0.0f)))
             {
                 current_screen = Time_S;
                 first_time = true;
+                markdownEdit = true;
+                // do_event_log(appState.myAppSettings.stop_time, appState.myAppSettings.stop_time, )
             }
-            ImGui::SameLine(0, HelloImGui::EmSize(5.0f));
-            if (ImGui::Button("CANCEL", HelloImGui::EmToVec2(5.0f, 0.0f)))
+            ImGui::SameLine(0, HelloImGui::EmSize(3.0f));
+            if (ImGui::Button("CANCEL", HelloImGui::EmToVec2(4.0f, 0.0f)))
             {
                 current_screen = Time_S;
                 first_time = true;
+                markdownEdit = true;
             }
 
             ImGui::PopFont();
