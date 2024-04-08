@@ -381,7 +381,7 @@ void guiFunction(AppState& appState)
                 std::time_t current = std::time(0);
                 appState.myAppSettings.start_time = current;
                 printf("Counting started!\n");
-                printf("Start time: %s\n", std::ctime(&current));
+                printf("Start time: %s", std::ctime(&current));
             }
             ImGui::PopFont();
         }
@@ -423,7 +423,7 @@ void guiFunction(AppState& appState)
                 appState.myAppSettings.stop_time = std::time(0);
                 current_screen = Timer_End_S;
                 printf("Counting stopped!\n");
-                printf("Start time: %s\n", std::ctime(&appState.myAppSettings.start_time));
+                printf("Start time: %s", std::ctime(&appState.myAppSettings.start_time));
                 t.cancel();
                 first_time = true;
             }
@@ -483,7 +483,7 @@ void guiFunction(AppState& appState)
             static char MarkdownInput[1024] = "";
             static std::time_t duration_time, duration_sec, duration_min, duration_hour = 0;
             static std::set<std::string> event_names;
-            static auto choosen_event = event_names.begin();
+            static auto choosen_event = event_names.end();
 
             auto reset_duration_time = [&]()
             {
@@ -499,7 +499,7 @@ void guiFunction(AppState& appState)
                 markdownEdit = true;
                 event_create = false;
                 get_event_names(event_names);
-                choosen_event = event_names.begin();
+                choosen_event = event_names.end();
                 reset_duration_time();
                 MarkdownInput[0] = '\0';
             }
@@ -531,13 +531,13 @@ void guiFunction(AppState& appState)
                 reset_duration_time();
             }
 
-            const char* combo_preview_value = event_names.empty() ? "None" : choosen_event->c_str();
+            std::string combo_preview_value = choosen_event == event_names.end() ? "" : choosen_event->c_str();
             ImGui::Text("Event name");
             ImGui::SameLine();
             ImGui::SetNextItemWidth(HelloImGui::EmSize(7.0f));
             if (!event_create)
             {
-                if (ImGui::BeginCombo("##event name", combo_preview_value))
+                if (ImGui::BeginCombo("##event name", combo_preview_value.c_str()))
                 {
                     for (auto it = event_names.begin(); it != event_names.end(); it++) {
                         const bool is_selected = (choosen_event == it);
@@ -591,9 +591,41 @@ void guiFunction(AppState& appState)
 
             if (ImGui::Button("STORE", HelloImGui::EmToVec2(4.0f, 0.0f)))
             {
-                current_screen = Time_S;
-                first_time = true;
-                // do_event_log(appState.myAppSettings.stop_time, appState.myAppSettings.stop_time, )
+                if (combo_preview_value.empty())
+                {
+                    printf("Event name shouldn't be empty!\n");
+                    ImGui::OpenPopup("Event shouldn't empty");
+                } else {
+                    do_event_log(appState.myAppSettings.start_time, appState.myAppSettings.stop_time, combo_preview_value, MarkdownInput);
+                    eval_log_line_str((*appState.csv_reader), (char *)life_controller_core::get_last_append_line().c_str());
+                    current_screen = Time_S;
+                    first_time = true;
+                }
+            }
+            {
+                ImGui::PushFont(appState.TitleFont);
+                // Always center this window when appearing
+                ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+                ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+                // TODO: this popup modal don't pop up.
+                if (ImGui::BeginPopupModal("Event shouldn't empty", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+                {
+                    ImGui::Text("Please choose one event.");
+                    ImGui::Separator();
+
+                    static bool dont_ask_me_next_time = false;
+                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+                    ImGui::Checkbox("Don't ask me next time", &dont_ask_me_next_time);
+                    ImGui::PopStyleVar();
+
+                    if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+                    ImGui::SetItemDefaultFocus();
+                    ImGui::SameLine();
+                    if (ImGui::Button("Cancel", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+                    ImGui::EndPopup();
+                }
+                ImGui::PopFont();
             }
             ImGui::SameLine(0, HelloImGui::EmSize(3.0f));
             if (ImGui::Button("CANCEL", HelloImGui::EmToVec2(4.0f, 0.0f)))
