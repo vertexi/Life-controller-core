@@ -416,8 +416,6 @@ void guiFunction(AppState& appState)
             ImGui::PushFont(appState.TimeFontSmall);
             if (ButtonCenteredOnLine("Stop"))
             {
-                // TODO: stop continoue mechanism
-                // TODO: timer status transfer to settings (start time end time)
                 strcpy(timer_str, "00:00:00");
                 appState.myAppSettings.counting = false;
                 appState.myAppSettings.stop_time = std::time(0);
@@ -608,7 +606,6 @@ void guiFunction(AppState& appState)
                 ImVec2 center = ImGui::GetMainViewport()->GetCenter();
                 ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-                // TODO: this popup modal don't pop up.
                 if (ImGui::BeginPopupModal("Event shouldn't empty", NULL, ImGuiWindowFlags_AlwaysAutoResize))
                 {
                     ImGui::Text("Please choose one event.");
