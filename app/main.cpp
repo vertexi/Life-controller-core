@@ -643,12 +643,6 @@ void guiFunction(AppState& appState)
         {
             // TODO: implement event edit screen
             static bool first_time = true;
-            static std::set<std::string> event_names;
-            get_event_names(event_names);
-            for (auto& event_name : event_names)
-            {
-                printf("event name: %s\n", event_name.c_str());
-            }
         }
         break;
     default:

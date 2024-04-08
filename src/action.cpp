@@ -6,7 +6,7 @@
 
 namespace life_controller_core
 {
-    std::string last_append_line = "";
+    static std::string last_append_line = "";
 
     std::string get_last_append_line() {
         return last_append_line;
