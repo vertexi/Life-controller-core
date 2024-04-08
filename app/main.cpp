@@ -316,7 +316,7 @@ void AlignForWidth(float width, float alignment = 0.5f)
 }
 
 enum SCREEN_STATE { Time_S, Timer_S, Setting_S, Timer_End_S, Event_Edit_S };
-
+#define TIME_STR_LEN 20
 void guiFunction(AppState& appState)
 {
     static tray_and_menu t;
@@ -327,12 +327,12 @@ void guiFunction(AppState& appState)
     static bool first_time = true;
     static enum SCREEN_STATE current_screen = Time_S;
 
-    static char time_str[20] = "11:31:00";
+    static char time_str[TIME_STR_LEN] = "11:31:00";
     if (first_time)
     {
         glfwSetWindowAttrib(glfwGetCurrentContext(), GLFW_FLOATING, appState.myAppSettings.always_on_top);
         std::time_t now = std::time(0);
-        std::strftime(time_str, 20, "%H:%M:%S", std::localtime(&now));
+        std::strftime(time_str, TIME_STR_LEN, "%H:%M:%S", std::localtime(&now));
         static asio::steady_timer t(io_service, asio::chrono::seconds(1));
         t.async_wait(std::bind(updateTime, std::placeholders::_1, &t, time_str, sizeof(time_str)));
 
@@ -341,29 +341,34 @@ void guiFunction(AppState& appState)
             current_screen = Timer_S;
         }
     }
+    first_time = false;
 
     ImGui::NewLine();
 
-    if (ImGui::BeginPopupContextItem("ContextMenu"))
-    {
-        ImGui::PushFont(appState.TitleFont);
-        if (ImGui::Selectable("Settings"))
-        {
-            current_screen = Setting_S;
-        }
-        ImGui::PopFont();
-        ImGui::EndPopup();
-    }
     ImGuiStyle& style = ImGui::GetStyle();
 
     switch (current_screen)
     {
     case Time_S:
         {
+            static bool first_time = true;
+
+            first_time = false;
+
             ImVec2 dragSize(ImGui::GetMainViewport()->Size.x, ImGui::GetFontSize() * 1.5f);
             ImRect dragArea(ImGui::GetMainViewport()->Pos, ImGui::GetMainViewport()->Pos + dragSize);
             ImVec2 mousePos = ImGui::GetMousePos();
 
+            if (ImGui::BeginPopupContextItem("ContextMenu"))
+            {
+                ImGui::PushFont(appState.TitleFont);
+                if (ImGui::Selectable("Settings"))
+                {
+                    current_screen = Setting_S;
+                }
+                ImGui::PopFont();
+                ImGui::EndPopup();
+            }
             if (dragArea.Contains(mousePos) && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
             {
                 ImGui::OpenPopup("ContextMenu");
@@ -389,7 +394,7 @@ void guiFunction(AppState& appState)
     case Timer_S:
         {
             static bool first_time = true;
-            static char timer_str[20] = "00:00:00";
+            static char timer_str[TIME_STR_LEN] = "00:00:00";
             static asio::steady_timer t(io_service, asio::chrono::seconds(1));
             if (first_time)
             {
@@ -649,8 +654,6 @@ void guiFunction(AppState& appState)
     default:
         break;
     }
-
-    first_time = false;
 }
 
 void AppPoll()
