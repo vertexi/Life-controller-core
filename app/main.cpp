@@ -563,8 +563,11 @@ void guiFunction(AppState& appState)
                 ImGui::SameLine();
                 if(ImGui::Button("Confirm", ImVec2(ImGui::CalcTextSize("Confirm").x + style.FramePadding.x*2, 0.0f)))
                 {
-                    create_event_log(event_name, MarkdownInput);
-                    eval_log_line_str((*appState.csv_reader), (char *)life_controller_core::get_last_append_line().c_str());
+                    if (strlen(event_name) > 0)
+                    {
+                        create_event_log(event_name, MarkdownInput);
+                        eval_log_line_str((*appState.csv_reader), (char *)life_controller_core::get_last_append_line().c_str());
+                    }
                     first_time = true;
                 }
             }
