@@ -1,3 +1,4 @@
 [submodule "app/imgui_bundle"]
 	path = app/imgui_bundle
 	url = https://github.com/vertexi/imgui_bundle
+	branch = life-controller
