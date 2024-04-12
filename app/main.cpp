@@ -6,6 +6,8 @@
 #include "config.hpp"
 #include <common.hpp>
 
+#include "systray.h"
+
 #include <ctime>
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "immapp/immapp.h"
@@ -115,123 +117,6 @@ const ImWchar*  GetGlyphRangesChineseSimplifiedCommon()
 #include "asio.hpp"
 asio::io_service io_service;
 
-#include <tray.h>
-
-#define TRAY_ICON1 "icon.png"
-#define TRAY_ICON2 "icon.ico"
-class tray_and_menu {
-  public:
-    tray_and_menu() {
-        // Setup arrays with tray items
-        if (tray_.menu != nullptr) {
-            return;
-        }
-
-        tray_.menu = new tray_menu[8];
-        tray_.menu[0] = {.text = (char*)"Hello", .cb = hello_cb, .submenu = nullptr};
-        tray_.menu[1] = {.text = (char*)"Checked", .cb = toggle_cb, .submenu = nullptr};
-        tray_.menu[2] = {.text = (char*)"Disabled", .disabled = 1, .submenu = nullptr};
-        tray_.menu[3] = {.text = (char*)"-", .submenu = nullptr};
-        tray_.menu[4] = {.text = (char*)"SubMenu", .submenu = new tray_menu[3]};
-        tray_.menu[5] = {.text = (char*)"-", .submenu = nullptr};
-        tray_.menu[6] = {.text = (char*)"Quit", .cb = quit_cb, .submenu = nullptr};
-        tray_.menu[7] = {.text = nullptr, .submenu = nullptr};
-
-        tray_.menu[4].submenu[0] = {.text = (char*)"FIRST",
-                                    .checked = 1,
-                                    .cb = submenu_cb,
-                                    .submenu = nullptr};
-        tray_.menu[4].submenu[1] = {.text = (char*)"SECOND",
-                                    .submenu = new tray_menu[6]};
-        tray_.menu[4].submenu[2] = {.text = nullptr, .submenu = nullptr};
-
-        tray_.menu[4].submenu[1].submenu[0] = {.text = (char*)"THIRD",
-                                               .submenu = new tray_menu[4]};
-        tray_.menu[4].submenu[1].submenu[1] = {.text = (char*)"FOUR",
-                                               .submenu = new tray_menu[3]};
-        tray_.menu[4].submenu[1].submenu[2] = {.text = nullptr,
-                                               .submenu = nullptr};
-
-        tray_.menu[4].submenu[1].submenu[0].submenu[0] = {
-            .text = (char*)"7", .cb = submenu_cb, .submenu = nullptr};
-        tray_.menu[4].submenu[1].submenu[0].submenu[1] = {.text = (char*)"-",
-                                                          .submenu = nullptr};
-        tray_.menu[4].submenu[1].submenu[0].submenu[2] = {
-            .text = (char*)"8", .cb = submenu_cb, .submenu = nullptr};
-        tray_.menu[4].submenu[1].submenu[0].submenu[3] = {.text = nullptr,
-                                                          .submenu = nullptr};
-
-        tray_.menu[4].submenu[1].submenu[1].submenu[0] = {
-            .text = (char*)"5", .cb = submenu_cb, .submenu = nullptr};
-        tray_.menu[4].submenu[1].submenu[1].submenu[1] = {
-            .text = (char*)"6", .cb = submenu_cb, .submenu = nullptr};
-        tray_.menu[4].submenu[1].submenu[1].submenu[2] = {
-            .text = nullptr, .cb = submenu_cb, .submenu = nullptr};
-
-        if (tray_init(&tray_) < 0) {
-            std::runtime_error("failed to create tray_");
-        }
-        tray_update(&tray_);
-    }
-
-    ~tray_and_menu() {
-        delete[] tray_.menu[4].submenu[1].submenu[1].submenu;
-        delete[] tray_.menu[4].submenu[1].submenu[0].submenu;
-        delete[] tray_.menu[4].submenu[1].submenu;
-        delete[] tray_.menu[4].submenu;
-        delete[] tray_.menu[3].submenu;
-        delete[] tray_.menu->submenu;
-        tray_.menu->submenu = nullptr;
-    }
-
-    static void run_tray() {
-        while (tray_loop(1) == 0) {
-            std::cout << "Iteration" << std::endl;
-        }
-    }
-
-    static int loop_tray()
-    {
-        return tray_loop(0);
-    }
-
-  private:
-    static void toggle_cb(struct tray_menu *item) {
-        std::cout << "toggle cb" << std::endl;
-        item->checked = !item->checked;
-        tray_update(&tray_);
-    }
-
-    static void hello_cb(struct tray_menu *item) {
-        (void)item;
-        std::cout << "hello cb" << std::endl;
-        // NOLINTNEXTLINE(bugprone-branch-clone)
-        if (strcmp(tray_.icon, TRAY_ICON1) == 0) {
-            tray_.icon = (char *)TRAY_ICON2;
-        } else {
-            tray_.icon = (char *)TRAY_ICON1;
-        }
-        tray_update(&tray_);
-    }
-
-    static void quit_cb(struct tray_menu *item) {
-        (void)item;
-        std::cout << "quit cb" << std::endl;
-        tray_exit();
-    }
-
-    static void submenu_cb(struct tray_menu *item) {
-        (void)item;
-        std::cout << "submenu: clicked on " << item->text << std::endl;
-        tray_update(&tray_);
-    }
-
-  private /* members */:
-    // Tray with pointers to menu
-    static tray tray_;
-};
-
-tray tray_and_menu::tray_{.icon = (char *)TRAY_ICON2, .menu = nullptr};
 
 struct AppState
 {
@@ -414,8 +299,7 @@ enum SCREEN_STATE { Time_S, Timer_S, Setting_S, Timer_End_S, Event_Edit_S };
 #define TIME_STR_LEN 20
 void guiFunction(AppState& appState)
 {
-    static tray_and_menu t;
-    if (tray_and_menu::loop_tray() == -1)
+    if (tray_loop(0) == -1)
     {
         HelloImGui::GetRunnerParams()->appShallExit = true;
     }
@@ -791,7 +675,13 @@ int main(int , char *[]) {
     //
     // Load user settings at `PostInit` and save them at `BeforeExit`
     //
-    runnerParams.callbacks.PostInit = [&appState]   { LoadMyAppSettings(appState);};
+    runnerParams.callbacks.PostInit = [&appState]   {
+        LoadMyAppSettings(appState);
+        if (tray_init(&tray) < 0) {
+            printf("failed to create tray\n");
+            HelloImGui::GetRunnerParams()->appShallExit = true;
+        }
+    };
     runnerParams.callbacks.BeforeExit = [&appState] { SaveMyAppSettings(appState);};
     runnerParams.callbacks.AfterSwap = AppPoll;
 

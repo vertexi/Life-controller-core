@@ -2,3 +2,6 @@
 	path = app/imgui_bundle
 	url = https://github.com/vertexi/imgui_bundle
 	branch = life-controller
+[submodule "app/tray"]
+	path = app/tray
+	url = https://github.com/dmikushin/tray
