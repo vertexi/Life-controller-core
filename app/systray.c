@@ -10,6 +10,7 @@
 #endif
 
 #include "tray.h"
+#include "windowBehaviour.h"
 
 #if TRAY_APPINDICATOR
 #define TRAY_ICON1 "mail-message-new"
@@ -25,7 +26,7 @@
 // C header here
 
 static void toggle_cb(struct tray_menu *item);
-static void hello_cb(struct tray_menu *item);
+static void show_cb(struct tray_menu *item);
 static void quit_cb(struct tray_menu *item);
 static void submenu_cb(struct tray_menu *item);
 
@@ -34,10 +35,11 @@ struct tray tray = {
     .icon = TRAY_ICON1,
 #if TRAY_WINAPI
     .tooltip = (char *)"Tray",
+    .tray_icon_left_button_handle = show_window,
 #endif
     .menu =
         (struct tray_menu[]) {
-            {.text = "Hello", .cb = hello_cb},
+            {.text = "Show", .cb = show_cb},
             {.text = "Checked", .checked = 1, .checkbox = 1, .cb = toggle_cb},
             {.text = "Disabled", .disabled = 1},
             {.text = "-"},
@@ -74,9 +76,10 @@ static void toggle_cb(struct tray_menu *item) {
   tray_update(&tray);
 }
 
-static void hello_cb(struct tray_menu *item) {
+static void show_cb(struct tray_menu *item) {
   (void)item;
-  printf("hello cb\n");
+  printf("show cb\n");
+  show_window();
   if (strcmp(tray.icon, TRAY_ICON1) == 0) {
     tray.icon = TRAY_ICON2;
   } else {

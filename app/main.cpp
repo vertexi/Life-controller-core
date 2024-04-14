@@ -22,8 +22,6 @@
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
 
-#include <GLFW/glfw3.h>
-
 struct MyAppSettings
 {
     char device_name[256] = "windows";
@@ -117,6 +115,7 @@ const ImWchar*  GetGlyphRangesChineseSimplifiedCommon()
 #include "asio.hpp"
 asio::io_service io_service;
 
+#include "windowBehaviour.h"
 
 struct AppState
 {
@@ -309,7 +308,7 @@ void guiFunction(AppState& appState)
     static char time_str[TIME_STR_LEN] = "00:00:00";
     if (first_time)
     {
-        glfwSetWindowAttrib(glfwGetCurrentContext(), GLFW_FLOATING, appState.myAppSettings.always_on_top);
+        always_on_top(appState.myAppSettings.always_on_top);
         std::time_t now = std::time(0);
         std::strftime(time_str, TIME_STR_LEN, "%H:%M:%S", std::localtime(&now));
         static asio::steady_timer t(io_service, asio::chrono::seconds(1));
@@ -420,7 +419,7 @@ void guiFunction(AppState& appState)
             ImGui::Checkbox("Always on top", &always_on_top);
             if (always_on_top != appState.myAppSettings.always_on_top)
             {
-                glfwSetWindowAttrib(glfwGetCurrentContext(), GLFW_FLOATING, always_on_top);
+                ::always_on_top(always_on_top);
                 appState.myAppSettings.always_on_top = always_on_top;
             }
             static char device_name[256] = "";
@@ -668,6 +667,7 @@ int main(int , char *[]) {
     runnerParams.appWindowParams.borderlessMovable = true;
     runnerParams.appWindowParams.borderlessResizable = true;
     runnerParams.appWindowParams.borderlessClosable = true;
+    runnerParams.appWindowParams.borderlessHideable = true;
 
     // Load additional font
     runnerParams.callbacks.LoadAdditionalFonts = [&appState]() { LoadFonts(appState); };
@@ -684,6 +684,8 @@ int main(int , char *[]) {
     };
     runnerParams.callbacks.BeforeExit = [&appState] { SaveMyAppSettings(appState);};
     runnerParams.callbacks.AfterSwap = AppPoll;
+
+    runnerParams.callbacks.HideWindow = [] {hide_window();};
 
     runnerParams.imGuiWindowParams.showStatusBar = true;
     // uncomment next line in order to hide the FPS in the status bar

@@ -4,4 +4,4 @@
 	branch = life-controller
 [submodule "app/tray"]
 	path = app/tray
-	url = https://github.com/dmikushin/tray
+	url = https://github.com/vertexi/tray
