@@ -1,3 +1,5 @@
+#ifndef __EMSCRIPTEN__
+
 #include <stdio.h>
 #include <string.h>
 
@@ -99,3 +101,5 @@ static void submenu_cb(struct tray_menu *item) {
   printf("submenu: clicked on %s\n", item->text);
   tray_update(&tray);
 }
+
+#endif

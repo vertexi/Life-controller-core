@@ -1,3 +1,5 @@
+#ifndef __EMSCRIPTEN__
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -7,4 +9,6 @@ extern struct tray tray;
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

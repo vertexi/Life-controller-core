@@ -6,7 +6,11 @@
 #include "config.hpp"
 #include <common.hpp>
 
+#ifndef __EMSCRIPTEN__
 #include "systray.h"
+#else
+#include <emscripten.h>
+#endif
 
 #include <ctime>
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -111,8 +115,13 @@ const ImWchar*  GetGlyphRangesChineseSimplifiedCommon()
     return &full_ranges[0];
 }
 
+#ifdef EMSCRIPTEN
+    #include "boost/asio.hpp"
+    namespace asio = boost::asio;
+#else
+    #include "asio.hpp"
+#endif
 
-#include "asio.hpp"
 asio::io_service io_service;
 
 #include "windowBehaviour.h"
@@ -161,7 +170,7 @@ MyAppSettings StringToMyAppSettings(const std::string& s)
     {
         if (d.HasMember("deviceName"))
         {
-            strcpy_s(myAppSettings.device_name, d["deviceName"].GetString());
+            strcpy(myAppSettings.device_name, d["deviceName"].GetString());
         }
         if (d.HasMember("counting"))
         {
@@ -214,23 +223,12 @@ void LoadFonts(AppState& appState) // This is called by runnerParams.callbacks.L
     fontLoadingParamsChinese.glyphRanges = HelloImGui::ImWchar2ImWcharPairs(GetGlyphRangesChineseSimplifiedCommon());
 
     appState.ChineseFont = HelloImGui::LoadFont("fonts/LXGWWenKaiMonoLite-Regular.ttf", 30.f, fontLoadingParamsChinese);
-
-    HelloImGui::FontLoadingParams fontLoadingParamsEmoji;
-    fontLoadingParamsEmoji.useFullGlyphRange = true;
-    appState.EmojiFont = HelloImGui::LoadFont("fonts/NotoEmoji-Regular.ttf", 24.f, fontLoadingParamsEmoji);
-
-    HelloImGui::FontLoadingParams fontLoadingParamsLargeIcon;
-    fontLoadingParamsLargeIcon.useFullGlyphRange = true;
-    appState.LargeIconFont = HelloImGui::LoadFont("fonts/fontawesome-webfont.ttf", 24.f, fontLoadingParamsLargeIcon);
-#ifdef IMGUI_ENABLE_FREETYPE
-    // Found at https://www.colorfonts.wtf/
-    HelloImGui::FontLoadingParams fontLoadingParamsColor;
-    fontLoadingParamsColor.loadColor = true;
-    appState.ColorFont = HelloImGui::LoadFont("fonts/Playbox/Playbox-FREE.otf", 24.f, fontLoadingParamsColor);
-#endif
 }
-
+#ifdef EMSCRIPTEN
+void updateTime(const boost::system::error_code& ec, asio::steady_timer* t, char* time_str, size_t bufsize)
+#else
 void updateTime(const asio::error_code& ec, asio::steady_timer* t, char* time_str, size_t bufsize)
+#endif
 {
     if (ec)
     {
@@ -242,8 +240,11 @@ void updateTime(const asio::error_code& ec, asio::steady_timer* t, char* time_st
     t->expires_at(t->expiry() + asio::chrono::seconds(1));
     t->async_wait(std::bind(updateTime, std::placeholders::_1, t, time_str, bufsize));
 }
-
+#ifdef EMSCRIPTEN
+void updateTimer(const boost::system::error_code& ec, asio::steady_timer* t, std::time_t start_time, char* time_str, size_t bufsize)
+#else
 void updateTimer(const asio::error_code& ec, asio::steady_timer* t, std::time_t start_time, char* time_str, size_t bufsize)
+#endif
 {
     if (ec)
     {
@@ -298,10 +299,12 @@ enum SCREEN_STATE { Time_S, Timer_S, Setting_S, Timer_End_S, Event_Edit_S };
 #define TIME_STR_LEN 20
 void guiFunction(AppState& appState)
 {
+    #ifndef __EMSCRIPTEN__
     if (tray_loop(0) == -1)
     {
         HelloImGui::GetRunnerParams()->appShallExit = true;
     }
+    #endif
     static bool first_time = true;
     static enum SCREEN_STATE current_screen = Time_S;
 
@@ -640,7 +643,34 @@ void AppPoll()
     io_service.poll();
 }
 
+#ifdef EMSCRIPTEN
+extern "C" {
+    void EMSCRIPTEN_KEEPALIVE clean_stuff() {
+        HelloImGui::GetRunnerParams()->callbacks.BeforeExit();
+        SyncEmscriptenToIndexDB();
+    }
+}
+#endif
+
+#include <fplus/fplus.hpp>
+
+std::string linesUnion(const std::string& input1, const std::string& input2)
+{
+    using namespace fplus;
+    return join(std::string("\n"), nub(append(split_lines(false, input1), split_lines(false, input2))));
+}
+#include "app_config.hpp"
+
 int main(int , char *[]) {
+    set_log_base_dir(LOG_BASE_DIR);
+    std::string input1 = R"(a,b,c,d
+e,f,g,h
+)";
+    std::string input2 = R"(a,b,c,d
+k,l,m,n
+)";
+    std::string result = linesUnion(input1, input2);
+    std::cout << result << std::endl;
     AppState appState;
 
     std::time_t start = std::time(0);
@@ -650,7 +680,7 @@ int main(int , char *[]) {
     create_goal_log("test", true, 99999, start, end);
     create_goal_log("test", false, 9999999, start, end);
     do_event_log(start, end, "test", "test");
-    io::CSVReader<7> csv_reader(LOGFILE_NAME, std::unique_ptr<io::ByteSourceBase>(new FileSourceBase(LOGFILE_NAME)));
+    io::CSVReader<7> csv_reader(LOG_BASE_DIR "/" LOGFILE_NAME, std::unique_ptr<io::ByteSourceBase>(new FileSourceBase(LOG_BASE_DIR "/" LOGFILE_NAME)));
     appState.csv_reader = &csv_reader;
     eval_log_init(csv_reader);
     eval_log(csv_reader);
@@ -677,10 +707,12 @@ int main(int , char *[]) {
     //
     runnerParams.callbacks.PostInit = [&appState]   {
         LoadMyAppSettings(appState);
+        #ifndef __EMSCRIPTEN__
         if (tray_init(&tray) < 0) {
             printf("failed to create tray\n");
             HelloImGui::GetRunnerParams()->appShallExit = true;
         }
+        #endif
     };
     runnerParams.callbacks.BeforeExit = [&appState] { SaveMyAppSettings(appState);};
     runnerParams.callbacks.AfterSwap = AppPoll;
@@ -709,7 +741,12 @@ int main(int , char *[]) {
 
     runnerParams.callbacks.ShowGui =  [&] { guiFunction(appState); };
 
+    #if EMSCRIPTEN
+    runnerParams.iniFolderType = HelloImGui::IniFolderType::CustomFolder;
+    runnerParams.iniFolder = LOG_BASE_DIR;
+    #else
     runnerParams.iniFolderType = HelloImGui::IniFolderType::AppExecutableFolder;
+    #endif
 
 
     // HelloImGui::DeleteIniSettings(runnerParams);

@@ -1,0 +1,7 @@
+#ifdef EMSCRIPTEN
+#define LOG_BASE_DIR "/@MY_APP_NAME@"
+# elif ESP32
+#define LOG_BASE_DIR "."
+#else
+#define LOG_BASE_DIR "."
+#endif
