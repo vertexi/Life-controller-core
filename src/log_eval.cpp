@@ -1,13 +1,14 @@
-#include <string>
-#include <set>
+#include "common.hpp"
+#include "config.hpp"
 #include "include/fast-cpp-csv-parser/csv.h"
 #include "include/rapidjson/document.h"
-#include "include/rapidjson/writer.h"
 #include "include/rapidjson/prettywriter.h"
 #include "include/rapidjson/stringbuffer.h"
-#include "config.hpp"
-#include "common.hpp"
+#include "include/rapidjson/writer.h"
 #include "io.hpp"
+#include <set>
+#include <string>
+
 
 using namespace rapidjson;
 
@@ -25,8 +26,7 @@ int event_eval_total_duration(Document& d)
 {
     auto& allocator = d.GetAllocator();
     auto& events = d["events"];
-    for (Value::ConstMemberIterator itr = events.MemberBegin();
-    itr != events.MemberEnd(); ++itr)
+    for (Value::ConstMemberIterator itr = events.MemberBegin(); itr != events.MemberEnd(); ++itr)
     {
         auto event_name = itr->name.GetString();
         auto& logs = itr->value["logs"];
@@ -48,9 +48,11 @@ int event_eval_goal(std::string event_data, Value& goal_value, Document::Allocat
     std::vector<std::string> goal_types = {"times", "duration"};
     for (auto& goal_type : goal_types)
     {
-        if(event_data.find(goal_type)!= std::string::npos) {
-            auto head_size = (goal_type+":").size();
-            event_data = event_data.substr(event_data.find(goal_type)+head_size, event_data.size()-head_size);
+        if (event_data.find(goal_type) != std::string::npos)
+        {
+            auto head_size = (goal_type + ":").size();
+            event_data =
+                event_data.substr(event_data.find(goal_type) + head_size, event_data.size() - head_size);
             trim(event_data);
             atoi_func converter;
             if (converter(event_data.c_str(), event_data.size()))
@@ -61,7 +63,9 @@ int event_eval_goal(std::string event_data, Value& goal_value, Document::Allocat
                 goal_value.AddMember(goal_type_v, goal_duration_t_v, allocator);
                 goal_value.AddMember("progress", Value().SetInt64(0), allocator);
                 return 0;
-            } else {
+            }
+            else
+            {
                 puts(("ERROR: " + goal_type + "not found in event_data " + event_data + "\n").c_str());
                 return 1;
             }
@@ -70,7 +74,11 @@ int event_eval_goal(std::string event_data, Value& goal_value, Document::Allocat
     return 1;
 }
 
-Value& event_eval_log(Value& action_value, uint64_t start_time_t, uint64_t end_time_t, const std::string &event_log, Document::AllocatorType& allocator)
+Value& event_eval_log(Value& action_value,
+                      uint64_t start_time_t,
+                      uint64_t end_time_t,
+                      const std::string& event_log,
+                      Document::AllocatorType& allocator)
 {
     Value action_start_time_t_v(start_time_t);
     Value action_end_time_t_v(end_time_t);
@@ -96,7 +104,8 @@ int event_eval_log_with_goal(Value& event, uint64_t start_time_t, uint64_t end_t
         if (goal.HasMember("times"))
         {
             goal["progress"].SetInt64(goal["progress"].GetInt64() + 1);
-        } else if (goal.HasMember("duration"))
+        }
+        else if (goal.HasMember("duration"))
         {
             if (time_within(start_time_t, goal["start_time_t"].GetInt64(), goal["end_time_t"].GetInt64()))
             {
@@ -110,7 +119,12 @@ int event_eval_log_with_goal(Value& event, uint64_t start_time_t, uint64_t end_t
     return 0;
 }
 
-int create_new_event(Document::AllocatorType& allocator, Value& events, std::string event_name, std::string event_desc, std::time_t create_date_time_t, bool duplicate)
+int create_new_event(Document::AllocatorType& allocator,
+                     Value& events,
+                     std::string event_name,
+                     std::string event_desc,
+                     std::time_t create_date_time_t,
+                     bool duplicate)
 {
     if (duplicate)
     {
@@ -142,30 +156,24 @@ int create_new_event(Document::AllocatorType& allocator, Value& events, std::str
 
 Document d;
 
-CSVREADER_CLASS *csv_reader = nullptr;
+CSVREADER_CLASS* csv_reader = nullptr;
 
-int eval_log_init(CSVREADER_CLASS &csv_reader_)
+int eval_log_init(CSVREADER_CLASS& csv_reader_)
 {
     csv_reader = &csv_reader_;
     d.SetObject();
     auto& allocator = d.GetAllocator();
     Value events_init(kObjectType);
     d.AddMember("events", events_init, allocator);
-    csv_reader->set_header("action",
-                 "start_time",
-                 "duration",
-                 "event_name",
-                 "event_data",
-                 "start_time_t",
-                 "end_time_t");
+    csv_reader->set_header(
+        "action", "start_time", "duration", "event_name", "event_data", "start_time_t", "end_time_t");
     return true;
 }
 
 int get_event_names(std::set<std::string>& event_names)
 {
     auto& events = d["events"];
-    for (Value::ConstMemberIterator itr = events.MemberBegin();
-    itr != events.MemberEnd(); ++itr)
+    for (Value::ConstMemberIterator itr = events.MemberBegin(); itr != events.MemberEnd(); ++itr)
     {
         auto event_name = itr->name.GetString();
         event_names.insert(event_name);
@@ -173,30 +181,42 @@ int get_event_names(std::set<std::string>& event_names)
     return 0;
 }
 
-int eval_log_line(std::string action
-    ,std::string start_time
-    ,std::string duration
-    ,std::string event_name
-    ,std::string event_data
-    ,std::time_t start_time_t
-    ,std::time_t end_time_t)
+int eval_log_line(std::string action,
+                  std::string start_time,
+                  std::string duration,
+                  std::string event_name,
+                  std::string event_data,
+                  std::time_t start_time_t,
+                  std::time_t end_time_t)
 {
     auto& allocator = d.GetAllocator();
     if (d.HasMember("events"))
     {
         auto events = d["events"].GetObject();
-        if(action == "CREATE") {
-            create_new_event(allocator, events, event_name, event_data, start_time_t, events.HasMember(event_name.c_str()));
-        } else if (action == "DO") {
-            if (!events.HasMember(event_name.c_str())) {
+        if (action == "CREATE")
+        {
+            create_new_event(allocator,
+                             events,
+                             event_name,
+                             event_data,
+                             start_time_t,
+                             events.HasMember(event_name.c_str()));
+        }
+        else if (action == "DO")
+        {
+            if (!events.HasMember(event_name.c_str()))
+            {
                 create_new_event(allocator, events, event_name, event_data, start_time_t, false);
             }
             Value action_value(kObjectType);
             event_eval_log(action_value, start_time_t, end_time_t, event_data, allocator);
             events[event_name.c_str()]["logs"].PushBack(action_value, allocator);
             event_eval_log_with_goal(events[event_name.c_str()], start_time_t, end_time_t);
-        } else if(action == "GOAL") {
-            if (!events.HasMember(event_name.c_str())) {
+        }
+        else if (action == "GOAL")
+        {
+            if (!events.HasMember(event_name.c_str()))
+            {
                 create_new_event(allocator, events, event_name, event_data, start_time_t, false);
             }
             auto& event_goals = events[event_name.c_str()]["goals"];
@@ -208,7 +228,9 @@ int eval_log_line(std::string action
 
             event_eval_goal(event_data, goal_value, allocator);
             event_goals.PushBack(goal_value, allocator);
-        } else {
+        }
+        else
+        {
             debug_printf("UNKNOWN\n");
         }
     }
@@ -225,7 +247,8 @@ int eval_log()
     std::time_t start_time_t;
     std::time_t end_time_t;
 
-    while(csv_reader->read_row(action, start_time, duration, event_name, event_data, start_time_t, end_time_t))
+    while (
+        csv_reader->read_row(action, start_time, duration, event_name, event_data, start_time_t, end_time_t))
     {
         eval_log_line(action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
     }
@@ -247,7 +270,8 @@ int eval_log_line_str(char* line)
     std::string event_data;
     std::time_t start_time_t;
     std::time_t end_time_t;
-    csv_reader->read_row_string(line, action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
+    csv_reader->read_row_string(
+        line, action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
     eval_log_line(action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
 
     return 0;

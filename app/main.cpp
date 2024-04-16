@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <string>
 
-#include <action.hpp>
-#include <log_eval.hpp>
 #include "config.hpp"
+#include <action.hpp>
 #include <common.hpp>
+#include <log_eval.hpp>
+
 
 #ifndef __EMSCRIPTEN__
 #include "systray.h"
@@ -14,17 +15,19 @@
 
 #include <ctime>
 #define IMGUI_DEFINE_MATH_OPERATORS
-#include "immapp/immapp.h"
-#include "imgui_md_wrapper.h"
 #include "hello_imgui/hello_imgui.h"
 #include "hello_imgui/icons_font_awesome_6.h"
 #include "imgui_internal.h"
+#include "imgui_md_wrapper.h"
+#include "immapp/immapp.h"
 #include <sstream>
 
+
 #include "rapidjson/document.h"
-#include "rapidjson/writer.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
+
 
 #include "absl/strings/escaping.h"
 
@@ -38,8 +41,10 @@ struct MyAppSettings
     bool always_on_top = false;
 };
 
-
-static void UnpackAccumulativeOffsetsIntoRanges(int base_codepoint, const short* accumulative_offsets, int accumulative_offsets_count, ImWchar* out_ranges)
+static void UnpackAccumulativeOffsetsIntoRanges(int base_codepoint,
+                                                const short* accumulative_offsets,
+                                                int accumulative_offsets_count,
+                                                ImWchar* out_ranges)
 {
     for (int n = 0; n < accumulative_offsets_count; n++, out_ranges += 2)
     {
@@ -49,79 +54,163 @@ static void UnpackAccumulativeOffsetsIntoRanges(int base_codepoint, const short*
     out_ranges[0] = 0;
 }
 
-const ImWchar*  GetGlyphRangesChineseSimplifiedCommon()
+const ImWchar* GetGlyphRangesChineseSimplifiedCommon()
 {
     // Store 2500 regularly used characters for Simplified Chinese.
-    // Sourced from https://zh.wiktionary.org/wiki/%E9%99%84%E5%BD%95:%E7%8E%B0%E4%BB%A3%E6%B1%89%E8%AF%AD%E5%B8%B8%E7%94%A8%E5%AD%97%E8%A1%A8
+    // Sourced from
+    // https://zh.wiktionary.org/wiki/%E9%99%84%E5%BD%95:%E7%8E%B0%E4%BB%A3%E6%B1%89%E8%AF%AD%E5%B8%B8%E7%94%A8%E5%AD%97%E8%A1%A8
     // This table covers 97.97% of all characters used during the month in July, 1987.
-    // You can use ImFontGlyphRangesBuilder to create your own ranges derived from this, by merging existing ranges or adding new characters.
-    // (Stored as accumulative offsets from the initial unicode codepoint 0x4E00. This encoding is designed to helps us compact the source code size.)
-    static const short accumulative_offsets_from_0x4E00[] =
-    {
-        0,1,2,4,1,1,1,1,2,1,3,2,1,2,2,1,1,1,1,1,5,2,1,2,3,3,3,2,2,4,1,1,1,2,1,5,2,3,1,2,1,2,1,1,2,1,1,2,2,1,4,1,1,1,1,5,10,1,2,19,2,1,2,1,2,1,2,1,2,
-        1,5,1,6,3,2,1,2,2,1,1,1,4,8,5,1,1,4,1,1,3,1,2,1,5,1,2,1,1,1,10,1,1,5,2,4,6,1,4,2,2,2,12,2,1,1,6,1,1,1,4,1,1,4,6,5,1,4,2,2,4,10,7,1,1,4,2,4,
-        2,1,4,3,6,10,12,5,7,2,14,2,9,1,1,6,7,10,4,7,13,1,5,4,8,4,1,1,2,28,5,6,1,1,5,2,5,20,2,2,9,8,11,2,9,17,1,8,6,8,27,4,6,9,20,11,27,6,68,2,2,1,1,
-        1,2,1,2,2,7,6,11,3,3,1,1,3,1,2,1,1,1,1,1,3,1,1,8,3,4,1,5,7,2,1,4,4,8,4,2,1,2,1,1,4,5,6,3,6,2,12,3,1,3,9,2,4,3,4,1,5,3,3,1,3,7,1,5,1,1,1,1,2,
-        3,4,5,2,3,2,6,1,1,2,1,7,1,7,3,4,5,15,2,2,1,5,3,22,19,2,1,1,1,1,2,5,1,1,1,6,1,1,12,8,2,9,18,22,4,1,1,5,1,16,1,2,7,10,15,1,1,6,2,4,1,2,4,1,6,
-        1,1,3,2,4,1,6,4,5,1,2,1,1,2,1,10,3,1,3,2,1,9,3,2,5,7,2,19,4,3,6,1,1,1,1,1,4,3,2,1,1,1,2,5,3,1,1,1,2,2,1,1,2,1,1,2,1,3,1,1,1,3,7,1,4,1,1,2,1,
-        1,2,1,2,4,4,3,8,1,1,1,2,1,3,5,1,3,1,3,4,6,2,2,14,4,6,6,11,9,1,15,3,1,28,5,2,5,5,3,1,3,4,5,4,6,14,3,2,3,5,21,2,7,20,10,1,2,19,2,4,28,28,2,3,
-        2,1,14,4,1,26,28,42,12,40,3,52,79,5,14,17,3,2,2,11,3,4,6,3,1,8,2,23,4,5,8,10,4,2,7,3,5,1,1,6,3,1,2,2,2,5,28,1,1,7,7,20,5,3,29,3,17,26,1,8,4,
-        27,3,6,11,23,5,3,4,6,13,24,16,6,5,10,25,35,7,3,2,3,3,14,3,6,2,6,1,4,2,3,8,2,1,1,3,3,3,4,1,1,13,2,2,4,5,2,1,14,14,1,2,2,1,4,5,2,3,1,14,3,12,
-        3,17,2,16,5,1,2,1,8,9,3,19,4,2,2,4,17,25,21,20,28,75,1,10,29,103,4,1,2,1,1,4,2,4,1,2,3,24,2,2,2,1,1,2,1,3,8,1,1,1,2,1,1,3,1,1,1,6,1,5,3,1,1,
-        1,3,4,1,1,5,2,1,5,6,13,9,16,1,1,1,1,3,2,3,2,4,5,2,5,2,2,3,7,13,7,2,2,1,1,1,1,2,3,3,2,1,6,4,9,2,1,14,2,14,2,1,18,3,4,14,4,11,41,15,23,15,23,
-        176,1,3,4,1,1,1,1,5,3,1,2,3,7,3,1,1,2,1,2,4,4,6,2,4,1,9,7,1,10,5,8,16,29,1,1,2,2,3,1,3,5,2,4,5,4,1,1,2,2,3,3,7,1,6,10,1,17,1,44,4,6,2,1,1,6,
-        5,4,2,10,1,6,9,2,8,1,24,1,2,13,7,8,8,2,1,4,1,3,1,3,3,5,2,5,10,9,4,9,12,2,1,6,1,10,1,1,7,7,4,10,8,3,1,13,4,3,1,6,1,3,5,2,1,2,17,16,5,2,16,6,
-        1,4,2,1,3,3,6,8,5,11,11,1,3,3,2,4,6,10,9,5,7,4,7,4,7,1,1,4,2,1,3,6,8,7,1,6,11,5,5,3,24,9,4,2,7,13,5,1,8,82,16,61,1,1,1,4,2,2,16,10,3,8,1,1,
-        6,4,2,1,3,1,1,1,4,3,8,4,2,2,1,1,1,1,1,6,3,5,1,1,4,6,9,2,1,1,1,2,1,7,2,1,6,1,5,4,4,3,1,8,1,3,3,1,3,2,2,2,2,3,1,6,1,2,1,2,1,3,7,1,8,2,1,2,1,5,
-        2,5,3,5,10,1,2,1,1,3,2,5,11,3,9,3,5,1,1,5,9,1,2,1,5,7,9,9,8,1,3,3,3,6,8,2,3,2,1,1,32,6,1,2,15,9,3,7,13,1,3,10,13,2,14,1,13,10,2,1,3,10,4,15,
-        2,15,15,10,1,3,9,6,9,32,25,26,47,7,3,2,3,1,6,3,4,3,2,8,5,4,1,9,4,2,2,19,10,6,2,3,8,1,2,2,4,2,1,9,4,4,4,6,4,8,9,2,3,1,1,1,1,3,5,5,1,3,8,4,6,
-        2,1,4,12,1,5,3,7,13,2,5,8,1,6,1,2,5,14,6,1,5,2,4,8,15,5,1,23,6,62,2,10,1,1,8,1,2,2,10,4,2,2,9,2,1,1,3,2,3,1,5,3,3,2,1,3,8,1,1,1,11,3,1,1,4,
-        3,7,1,14,1,2,3,12,5,2,5,1,6,7,5,7,14,11,1,3,1,8,9,12,2,1,11,8,4,4,2,6,10,9,13,1,1,3,1,5,1,3,2,4,4,1,18,2,3,14,11,4,29,4,2,7,1,3,13,9,2,2,5,
-        3,5,20,7,16,8,5,72,34,6,4,22,12,12,28,45,36,9,7,39,9,191,1,1,1,4,11,8,4,9,2,3,22,1,1,1,1,4,17,1,7,7,1,11,31,10,2,4,8,2,3,2,1,4,2,16,4,32,2,
-        3,19,13,4,9,1,5,2,14,8,1,1,3,6,19,6,5,1,16,6,2,10,8,5,1,2,3,1,5,5,1,11,6,6,1,3,3,2,6,3,8,1,1,4,10,7,5,7,7,5,8,9,2,1,3,4,1,1,3,1,3,3,2,6,16,
-        1,4,6,3,1,10,6,1,3,15,2,9,2,10,25,13,9,16,6,2,2,10,11,4,3,9,1,2,6,6,5,4,30,40,1,10,7,12,14,33,6,3,6,7,3,1,3,1,11,14,4,9,5,12,11,49,18,51,31,
-        140,31,2,2,1,5,1,8,1,10,1,4,4,3,24,1,10,1,3,6,6,16,3,4,5,2,1,4,2,57,10,6,22,2,22,3,7,22,6,10,11,36,18,16,33,36,2,5,5,1,1,1,4,10,1,4,13,2,7,
-        5,2,9,3,4,1,7,43,3,7,3,9,14,7,9,1,11,1,1,3,7,4,18,13,1,14,1,3,6,10,73,2,2,30,6,1,11,18,19,13,22,3,46,42,37,89,7,3,16,34,2,2,3,9,1,7,1,1,1,2,
-        2,4,10,7,3,10,3,9,5,28,9,2,6,13,7,3,1,3,10,2,7,2,11,3,6,21,54,85,2,1,4,2,2,1,39,3,21,2,2,5,1,1,1,4,1,1,3,4,15,1,3,2,4,4,2,3,8,2,20,1,8,7,13,
-        4,1,26,6,2,9,34,4,21,52,10,4,4,1,5,12,2,11,1,7,2,30,12,44,2,30,1,1,3,6,16,9,17,39,82,2,2,24,7,1,7,3,16,9,14,44,2,1,2,1,2,3,5,2,4,1,6,7,5,3,
-        2,6,1,11,5,11,2,1,18,19,8,1,3,24,29,2,1,3,5,2,2,1,13,6,5,1,46,11,3,5,1,1,5,8,2,10,6,12,6,3,7,11,2,4,16,13,2,5,1,1,2,2,5,2,28,5,2,23,10,8,4,
-        4,22,39,95,38,8,14,9,5,1,13,5,4,3,13,12,11,1,9,1,27,37,2,5,4,4,63,211,95,2,2,2,1,3,5,2,1,1,2,2,1,1,1,3,2,4,1,2,1,1,5,2,2,1,1,2,3,1,3,1,1,1,
-        3,1,4,2,1,3,6,1,1,3,7,15,5,3,2,5,3,9,11,4,2,22,1,6,3,8,7,1,4,28,4,16,3,3,25,4,4,27,27,1,4,1,2,2,7,1,3,5,2,28,8,2,14,1,8,6,16,25,3,3,3,14,3,
-        3,1,1,2,1,4,6,3,8,4,1,1,1,2,3,6,10,6,2,3,18,3,2,5,5,4,3,1,5,2,5,4,23,7,6,12,6,4,17,11,9,5,1,1,10,5,12,1,1,11,26,33,7,3,6,1,17,7,1,5,12,1,11,
-        2,4,1,8,14,17,23,1,2,1,7,8,16,11,9,6,5,2,6,4,16,2,8,14,1,11,8,9,1,1,1,9,25,4,11,19,7,2,15,2,12,8,52,7,5,19,2,16,4,36,8,1,16,8,24,26,4,6,2,9,
-        5,4,36,3,28,12,25,15,37,27,17,12,59,38,5,32,127,1,2,9,17,14,4,1,2,1,1,8,11,50,4,14,2,19,16,4,17,5,4,5,26,12,45,2,23,45,104,30,12,8,3,10,2,2,
-        3,3,1,4,20,7,2,9,6,15,2,20,1,3,16,4,11,15,6,134,2,5,59,1,2,2,2,1,9,17,3,26,137,10,211,59,1,2,4,1,4,1,1,1,2,6,2,3,1,1,2,3,2,3,1,3,4,4,2,3,3,
-        1,4,3,1,7,2,2,3,1,2,1,3,3,3,2,2,3,2,1,3,14,6,1,3,2,9,6,15,27,9,34,145,1,1,2,1,1,1,1,2,1,1,1,1,2,2,2,3,1,2,1,1,1,2,3,5,8,3,5,2,4,1,3,2,2,2,12,
-        4,1,1,1,10,4,5,1,20,4,16,1,15,9,5,12,2,9,2,5,4,2,26,19,7,1,26,4,30,12,15,42,1,6,8,172,1,1,4,2,1,1,11,2,2,4,2,1,2,1,10,8,1,2,1,4,5,1,2,5,1,8,
-        4,1,3,4,2,1,6,2,1,3,4,1,2,1,1,1,1,12,5,7,2,4,3,1,1,1,3,3,6,1,2,2,3,3,3,2,1,2,12,14,11,6,6,4,12,2,8,1,7,10,1,35,7,4,13,15,4,3,23,21,28,52,5,
-        26,5,6,1,7,10,2,7,53,3,2,1,1,1,2,163,532,1,10,11,1,3,3,4,8,2,8,6,2,2,23,22,4,2,2,4,2,1,3,1,3,3,5,9,8,2,1,2,8,1,10,2,12,21,20,15,105,2,3,1,1,
-        3,2,3,1,1,2,5,1,4,15,11,19,1,1,1,1,5,4,5,1,1,2,5,3,5,12,1,2,5,1,11,1,1,15,9,1,4,5,3,26,8,2,1,3,1,1,15,19,2,12,1,2,5,2,7,2,19,2,20,6,26,7,5,
-        2,2,7,34,21,13,70,2,128,1,1,2,1,1,2,1,1,3,2,2,2,15,1,4,1,3,4,42,10,6,1,49,85,8,1,2,1,1,4,4,2,3,6,1,5,7,4,3,211,4,1,2,1,2,5,1,2,4,2,2,6,5,6,
-        10,3,4,48,100,6,2,16,296,5,27,387,2,2,3,7,16,8,5,38,15,39,21,9,10,3,7,59,13,27,21,47,5,21,6
-    };
-    static ImWchar base_ranges[] = // not zero-terminated
-    {
-        0x0020, 0x00FF, // Basic Latin + Latin Supplement
-        0x2000, 0x206F, // General Punctuation
-        0x3000, 0x30FF, // CJK Symbols and Punctuations, Hiragana, Katakana
-        0x31F0, 0x31FF, // Katakana Phonetic Extensions
-        0xFF00, 0xFFEF, // Half-width characters
-        0xFFFD, 0xFFFD  // Invalid
-    };
-    static ImWchar full_ranges[IM_ARRAYSIZE(base_ranges) + IM_ARRAYSIZE(accumulative_offsets_from_0x4E00) * 2 + 1] = { 0 };
+    // You can use ImFontGlyphRangesBuilder to create your own ranges derived from this, by merging existing
+    // ranges or adding new characters. (Stored as accumulative offsets from the initial unicode codepoint
+    // 0x4E00. This encoding is designed to helps us compact the source code size.)
+    static const short accumulative_offsets_from_0x4E00[] = {
+        0,  1,  2,   4,  1,   1,   1,   1,   2,   1,   3,   2,   1,   2,   2,  1,   1,  1,  1,  1,  5,   2,
+        1,  2,  3,   3,  3,   2,   2,   4,   1,   1,   1,   2,   1,   5,   2,  3,   1,  2,  1,  2,  1,   1,
+        2,  1,  1,   2,  2,   1,   4,   1,   1,   1,   1,   5,   10,  1,   2,  19,  2,  1,  2,  1,  2,   1,
+        2,  1,  2,   1,  5,   1,   6,   3,   2,   1,   2,   2,   1,   1,   1,  4,   8,  5,  1,  1,  4,   1,
+        1,  3,  1,   2,  1,   5,   1,   2,   1,   1,   1,   10,  1,   1,   5,  2,   4,  6,  1,  4,  2,   2,
+        2,  12, 2,   1,  1,   6,   1,   1,   1,   4,   1,   1,   4,   6,   5,  1,   4,  2,  2,  4,  10,  7,
+        1,  1,  4,   2,  4,   2,   1,   4,   3,   6,   10,  12,  5,   7,   2,  14,  2,  9,  1,  1,  6,   7,
+        10, 4,  7,   13, 1,   5,   4,   8,   4,   1,   1,   2,   28,  5,   6,  1,   1,  5,  2,  5,  20,  2,
+        2,  9,  8,   11, 2,   9,   17,  1,   8,   6,   8,   27,  4,   6,   9,  20,  11, 27, 6,  68, 2,   2,
+        1,  1,  1,   2,  1,   2,   2,   7,   6,   11,  3,   3,   1,   1,   3,  1,   2,  1,  1,  1,  1,   1,
+        3,  1,  1,   8,  3,   4,   1,   5,   7,   2,   1,   4,   4,   8,   4,  2,   1,  2,  1,  1,  4,   5,
+        6,  3,  6,   2,  12,  3,   1,   3,   9,   2,   4,   3,   4,   1,   5,  3,   3,  1,  3,  7,  1,   5,
+        1,  1,  1,   1,  2,   3,   4,   5,   2,   3,   2,   6,   1,   1,   2,  1,   7,  1,  7,  3,  4,   5,
+        15, 2,  2,   1,  5,   3,   22,  19,  2,   1,   1,   1,   1,   2,   5,  1,   1,  1,  6,  1,  1,   12,
+        8,  2,  9,   18, 22,  4,   1,   1,   5,   1,   16,  1,   2,   7,   10, 15,  1,  1,  6,  2,  4,   1,
+        2,  4,  1,   6,  1,   1,   3,   2,   4,   1,   6,   4,   5,   1,   2,  1,   1,  2,  1,  10, 3,   1,
+        3,  2,  1,   9,  3,   2,   5,   7,   2,   19,  4,   3,   6,   1,   1,  1,   1,  1,  4,  3,  2,   1,
+        1,  1,  2,   5,  3,   1,   1,   1,   2,   2,   1,   1,   2,   1,   1,  2,   1,  3,  1,  1,  1,   3,
+        7,  1,  4,   1,  1,   2,   1,   1,   2,   1,   2,   4,   4,   3,   8,  1,   1,  1,  2,  1,  3,   5,
+        1,  3,  1,   3,  4,   6,   2,   2,   14,  4,   6,   6,   11,  9,   1,  15,  3,  1,  28, 5,  2,   5,
+        5,  3,  1,   3,  4,   5,   4,   6,   14,  3,   2,   3,   5,   21,  2,  7,   20, 10, 1,  2,  19,  2,
+        4,  28, 28,  2,  3,   2,   1,   14,  4,   1,   26,  28,  42,  12,  40, 3,   52, 79, 5,  14, 17,  3,
+        2,  2,  11,  3,  4,   6,   3,   1,   8,   2,   23,  4,   5,   8,   10, 4,   2,  7,  3,  5,  1,   1,
+        6,  3,  1,   2,  2,   2,   5,   28,  1,   1,   7,   7,   20,  5,   3,  29,  3,  17, 26, 1,  8,   4,
+        27, 3,  6,   11, 23,  5,   3,   4,   6,   13,  24,  16,  6,   5,   10, 25,  35, 7,  3,  2,  3,   3,
+        14, 3,  6,   2,  6,   1,   4,   2,   3,   8,   2,   1,   1,   3,   3,  3,   4,  1,  1,  13, 2,   2,
+        4,  5,  2,   1,  14,  14,  1,   2,   2,   1,   4,   5,   2,   3,   1,  14,  3,  12, 3,  17, 2,   16,
+        5,  1,  2,   1,  8,   9,   3,   19,  4,   2,   2,   4,   17,  25,  21, 20,  28, 75, 1,  10, 29,  103,
+        4,  1,  2,   1,  1,   4,   2,   4,   1,   2,   3,   24,  2,   2,   2,  1,   1,  2,  1,  3,  8,   1,
+        1,  1,  2,   1,  1,   3,   1,   1,   1,   6,   1,   5,   3,   1,   1,  1,   3,  4,  1,  1,  5,   2,
+        1,  5,  6,   13, 9,   16,  1,   1,   1,   1,   3,   2,   3,   2,   4,  5,   2,  5,  2,  2,  3,   7,
+        13, 7,  2,   2,  1,   1,   1,   1,   2,   3,   3,   2,   1,   6,   4,  9,   2,  1,  14, 2,  14,  2,
+        1,  18, 3,   4,  14,  4,   11,  41,  15,  23,  15,  23,  176, 1,   3,  4,   1,  1,  1,  1,  5,   3,
+        1,  2,  3,   7,  3,   1,   1,   2,   1,   2,   4,   4,   6,   2,   4,  1,   9,  7,  1,  10, 5,   8,
+        16, 29, 1,   1,  2,   2,   3,   1,   3,   5,   2,   4,   5,   4,   1,  1,   2,  2,  3,  3,  7,   1,
+        6,  10, 1,   17, 1,   44,  4,   6,   2,   1,   1,   6,   5,   4,   2,  10,  1,  6,  9,  2,  8,   1,
+        24, 1,  2,   13, 7,   8,   8,   2,   1,   4,   1,   3,   1,   3,   3,  5,   2,  5,  10, 9,  4,   9,
+        12, 2,  1,   6,  1,   10,  1,   1,   7,   7,   4,   10,  8,   3,   1,  13,  4,  3,  1,  6,  1,   3,
+        5,  2,  1,   2,  17,  16,  5,   2,   16,  6,   1,   4,   2,   1,   3,  3,   6,  8,  5,  11, 11,  1,
+        3,  3,  2,   4,  6,   10,  9,   5,   7,   4,   7,   4,   7,   1,   1,  4,   2,  1,  3,  6,  8,   7,
+        1,  6,  11,  5,  5,   3,   24,  9,   4,   2,   7,   13,  5,   1,   8,  82,  16, 61, 1,  1,  1,   4,
+        2,  2,  16,  10, 3,   8,   1,   1,   6,   4,   2,   1,   3,   1,   1,  1,   4,  3,  8,  4,  2,   2,
+        1,  1,  1,   1,  1,   6,   3,   5,   1,   1,   4,   6,   9,   2,   1,  1,   1,  2,  1,  7,  2,   1,
+        6,  1,  5,   4,  4,   3,   1,   8,   1,   3,   3,   1,   3,   2,   2,  2,   2,  3,  1,  6,  1,   2,
+        1,  2,  1,   3,  7,   1,   8,   2,   1,   2,   1,   5,   2,   5,   3,  5,   10, 1,  2,  1,  1,   3,
+        2,  5,  11,  3,  9,   3,   5,   1,   1,   5,   9,   1,   2,   1,   5,  7,   9,  9,  8,  1,  3,   3,
+        3,  6,  8,   2,  3,   2,   1,   1,   32,  6,   1,   2,   15,  9,   3,  7,   13, 1,  3,  10, 13,  2,
+        14, 1,  13,  10, 2,   1,   3,   10,  4,   15,  2,   15,  15,  10,  1,  3,   9,  6,  9,  32, 25,  26,
+        47, 7,  3,   2,  3,   1,   6,   3,   4,   3,   2,   8,   5,   4,   1,  9,   4,  2,  2,  19, 10,  6,
+        2,  3,  8,   1,  2,   2,   4,   2,   1,   9,   4,   4,   4,   6,   4,  8,   9,  2,  3,  1,  1,   1,
+        1,  3,  5,   5,  1,   3,   8,   4,   6,   2,   1,   4,   12,  1,   5,  3,   7,  13, 2,  5,  8,   1,
+        6,  1,  2,   5,  14,  6,   1,   5,   2,   4,   8,   15,  5,   1,   23, 6,   62, 2,  10, 1,  1,   8,
+        1,  2,  2,   10, 4,   2,   2,   9,   2,   1,   1,   3,   2,   3,   1,  5,   3,  3,  2,  1,  3,   8,
+        1,  1,  1,   11, 3,   1,   1,   4,   3,   7,   1,   14,  1,   2,   3,  12,  5,  2,  5,  1,  6,   7,
+        5,  7,  14,  11, 1,   3,   1,   8,   9,   12,  2,   1,   11,  8,   4,  4,   2,  6,  10, 9,  13,  1,
+        1,  3,  1,   5,  1,   3,   2,   4,   4,   1,   18,  2,   3,   14,  11, 4,   29, 4,  2,  7,  1,   3,
+        13, 9,  2,   2,  5,   3,   5,   20,  7,   16,  8,   5,   72,  34,  6,  4,   22, 12, 12, 28, 45,  36,
+        9,  7,  39,  9,  191, 1,   1,   1,   4,   11,  8,   4,   9,   2,   3,  22,  1,  1,  1,  1,  4,   17,
+        1,  7,  7,   1,  11,  31,  10,  2,   4,   8,   2,   3,   2,   1,   4,  2,   16, 4,  32, 2,  3,   19,
+        13, 4,  9,   1,  5,   2,   14,  8,   1,   1,   3,   6,   19,  6,   5,  1,   16, 6,  2,  10, 8,   5,
+        1,  2,  3,   1,  5,   5,   1,   11,  6,   6,   1,   3,   3,   2,   6,  3,   8,  1,  1,  4,  10,  7,
+        5,  7,  7,   5,  8,   9,   2,   1,   3,   4,   1,   1,   3,   1,   3,  3,   2,  6,  16, 1,  4,   6,
+        3,  1,  10,  6,  1,   3,   15,  2,   9,   2,   10,  25,  13,  9,   16, 6,   2,  2,  10, 11, 4,   3,
+        9,  1,  2,   6,  6,   5,   4,   30,  40,  1,   10,  7,   12,  14,  33, 6,   3,  6,  7,  3,  1,   3,
+        1,  11, 14,  4,  9,   5,   12,  11,  49,  18,  51,  31,  140, 31,  2,  2,   1,  5,  1,  8,  1,   10,
+        1,  4,  4,   3,  24,  1,   10,  1,   3,   6,   6,   16,  3,   4,   5,  2,   1,  4,  2,  57, 10,  6,
+        22, 2,  22,  3,  7,   22,  6,   10,  11,  36,  18,  16,  33,  36,  2,  5,   5,  1,  1,  1,  4,   10,
+        1,  4,  13,  2,  7,   5,   2,   9,   3,   4,   1,   7,   43,  3,   7,  3,   9,  14, 7,  9,  1,   11,
+        1,  1,  3,   7,  4,   18,  13,  1,   14,  1,   3,   6,   10,  73,  2,  2,   30, 6,  1,  11, 18,  19,
+        13, 22, 3,   46, 42,  37,  89,  7,   3,   16,  34,  2,   2,   3,   9,  1,   7,  1,  1,  1,  2,   2,
+        4,  10, 7,   3,  10,  3,   9,   5,   28,  9,   2,   6,   13,  7,   3,  1,   3,  10, 2,  7,  2,   11,
+        3,  6,  21,  54, 85,  2,   1,   4,   2,   2,   1,   39,  3,   21,  2,  2,   5,  1,  1,  1,  4,   1,
+        1,  3,  4,   15, 1,   3,   2,   4,   4,   2,   3,   8,   2,   20,  1,  8,   7,  13, 4,  1,  26,  6,
+        2,  9,  34,  4,  21,  52,  10,  4,   4,   1,   5,   12,  2,   11,  1,  7,   2,  30, 12, 44, 2,   30,
+        1,  1,  3,   6,  16,  9,   17,  39,  82,  2,   2,   24,  7,   1,   7,  3,   16, 9,  14, 44, 2,   1,
+        2,  1,  2,   3,  5,   2,   4,   1,   6,   7,   5,   3,   2,   6,   1,  11,  5,  11, 2,  1,  18,  19,
+        8,  1,  3,   24, 29,  2,   1,   3,   5,   2,   2,   1,   13,  6,   5,  1,   46, 11, 3,  5,  1,   1,
+        5,  8,  2,   10, 6,   12,  6,   3,   7,   11,  2,   4,   16,  13,  2,  5,   1,  1,  2,  2,  5,   2,
+        28, 5,  2,   23, 10,  8,   4,   4,   22,  39,  95,  38,  8,   14,  9,  5,   1,  13, 5,  4,  3,   13,
+        12, 11, 1,   9,  1,   27,  37,  2,   5,   4,   4,   63,  211, 95,  2,  2,   2,  1,  3,  5,  2,   1,
+        1,  2,  2,   1,  1,   1,   3,   2,   4,   1,   2,   1,   1,   5,   2,  2,   1,  1,  2,  3,  1,   3,
+        1,  1,  1,   3,  1,   4,   2,   1,   3,   6,   1,   1,   3,   7,   15, 5,   3,  2,  5,  3,  9,   11,
+        4,  2,  22,  1,  6,   3,   8,   7,   1,   4,   28,  4,   16,  3,   3,  25,  4,  4,  27, 27, 1,   4,
+        1,  2,  2,   7,  1,   3,   5,   2,   28,  8,   2,   14,  1,   8,   6,  16,  25, 3,  3,  3,  14,  3,
+        3,  1,  1,   2,  1,   4,   6,   3,   8,   4,   1,   1,   1,   2,   3,  6,   10, 6,  2,  3,  18,  3,
+        2,  5,  5,   4,  3,   1,   5,   2,   5,   4,   23,  7,   6,   12,  6,  4,   17, 11, 9,  5,  1,   1,
+        10, 5,  12,  1,  1,   11,  26,  33,  7,   3,   6,   1,   17,  7,   1,  5,   12, 1,  11, 2,  4,   1,
+        8,  14, 17,  23, 1,   2,   1,   7,   8,   16,  11,  9,   6,   5,   2,  6,   4,  16, 2,  8,  14,  1,
+        11, 8,  9,   1,  1,   1,   9,   25,  4,   11,  19,  7,   2,   15,  2,  12,  8,  52, 7,  5,  19,  2,
+        16, 4,  36,  8,  1,   16,  8,   24,  26,  4,   6,   2,   9,   5,   4,  36,  3,  28, 12, 25, 15,  37,
+        27, 17, 12,  59, 38,  5,   32,  127, 1,   2,   9,   17,  14,  4,   1,  2,   1,  1,  8,  11, 50,  4,
+        14, 2,  19,  16, 4,   17,  5,   4,   5,   26,  12,  45,  2,   23,  45, 104, 30, 12, 8,  3,  10,  2,
+        2,  3,  3,   1,  4,   20,  7,   2,   9,   6,   15,  2,   20,  1,   3,  16,  4,  11, 15, 6,  134, 2,
+        5,  59, 1,   2,  2,   2,   1,   9,   17,  3,   26,  137, 10,  211, 59, 1,   2,  4,  1,  4,  1,   1,
+        1,  2,  6,   2,  3,   1,   1,   2,   3,   2,   3,   1,   3,   4,   4,  2,   3,  3,  1,  4,  3,   1,
+        7,  2,  2,   3,  1,   2,   1,   3,   3,   3,   2,   2,   3,   2,   1,  3,   14, 6,  1,  3,  2,   9,
+        6,  15, 27,  9,  34,  145, 1,   1,   2,   1,   1,   1,   1,   2,   1,  1,   1,  1,  2,  2,  2,   3,
+        1,  2,  1,   1,  1,   2,   3,   5,   8,   3,   5,   2,   4,   1,   3,  2,   2,  2,  12, 4,  1,   1,
+        1,  10, 4,   5,  1,   20,  4,   16,  1,   15,  9,   5,   12,  2,   9,  2,   5,  4,  2,  26, 19,  7,
+        1,  26, 4,   30, 12,  15,  42,  1,   6,   8,   172, 1,   1,   4,   2,  1,   1,  11, 2,  2,  4,   2,
+        1,  2,  1,   10, 8,   1,   2,   1,   4,   5,   1,   2,   5,   1,   8,  4,   1,  3,  4,  2,  1,   6,
+        2,  1,  3,   4,  1,   2,   1,   1,   1,   1,   12,  5,   7,   2,   4,  3,   1,  1,  1,  3,  3,   6,
+        1,  2,  2,   3,  3,   3,   2,   1,   2,   12,  14,  11,  6,   6,   4,  12,  2,  8,  1,  7,  10,  1,
+        35, 7,  4,   13, 15,  4,   3,   23,  21,  28,  52,  5,   26,  5,   6,  1,   7,  10, 2,  7,  53,  3,
+        2,  1,  1,   1,  2,   163, 532, 1,   10,  11,  1,   3,   3,   4,   8,  2,   8,  6,  2,  2,  23,  22,
+        4,  2,  2,   4,  2,   1,   3,   1,   3,   3,   5,   9,   8,   2,   1,  2,   8,  1,  10, 2,  12,  21,
+        20, 15, 105, 2,  3,   1,   1,   3,   2,   3,   1,   1,   2,   5,   1,  4,   15, 11, 19, 1,  1,   1,
+        1,  5,  4,   5,  1,   1,   2,   5,   3,   5,   12,  1,   2,   5,   1,  11,  1,  1,  15, 9,  1,   4,
+        5,  3,  26,  8,  2,   1,   3,   1,   1,   15,  19,  2,   12,  1,   2,  5,   2,  7,  2,  19, 2,   20,
+        6,  26, 7,   5,  2,   2,   7,   34,  21,  13,  70,  2,   128, 1,   1,  2,   1,  1,  2,  1,  1,   3,
+        2,  2,  2,   15, 1,   4,   1,   3,   4,   42,  10,  6,   1,   49,  85, 8,   1,  2,  1,  1,  4,   4,
+        2,  3,  6,   1,  5,   7,   4,   3,   211, 4,   1,   2,   1,   2,   5,  1,   2,  4,  2,  2,  6,   5,
+        6,  10, 3,   4,  48,  100, 6,   2,   16,  296, 5,   27,  387, 2,   2,  3,   7,  16, 8,  5,  38,  15,
+        39, 21, 9,   10, 3,   7,   59,  13,  27,  21,  47,  5,   21,  6};
+    static ImWchar base_ranges[] =  // not zero-terminated
+        {
+            0x0020,
+            0x00FF,  // Basic Latin + Latin Supplement
+            0x2000,
+            0x206F,  // General Punctuation
+            0x3000,
+            0x30FF,  // CJK Symbols and Punctuations, Hiragana, Katakana
+            0x31F0,
+            0x31FF,  // Katakana Phonetic Extensions
+            0xFF00,
+            0xFFEF,  // Half-width characters
+            0xFFFD,
+            0xFFFD  // Invalid
+        };
+    static ImWchar
+        full_ranges[IM_ARRAYSIZE(base_ranges) + IM_ARRAYSIZE(accumulative_offsets_from_0x4E00) * 2 + 1] = {0};
     if (!full_ranges[0])
     {
         memcpy(full_ranges, base_ranges, sizeof(base_ranges));
-        UnpackAccumulativeOffsetsIntoRanges(0x4E00, accumulative_offsets_from_0x4E00, IM_ARRAYSIZE(accumulative_offsets_from_0x4E00), full_ranges + IM_ARRAYSIZE(base_ranges));
+        UnpackAccumulativeOffsetsIntoRanges(0x4E00,
+                                            accumulative_offsets_from_0x4E00,
+                                            IM_ARRAYSIZE(accumulative_offsets_from_0x4E00),
+                                            full_ranges + IM_ARRAYSIZE(base_ranges));
     }
     return &full_ranges[0];
 }
 
 #ifdef EMSCRIPTEN
-    #include "boost/asio.hpp"
-    namespace asio = boost::asio;
+#include "boost/asio.hpp"
+namespace asio = boost::asio;
 #else
-    #include "asio.hpp"
+#include "asio.hpp"
 #endif
 
 asio::io_service io_service;
@@ -188,10 +277,11 @@ MyAppSettings StringToMyAppSettings(const std::string& s)
     return myAppSettings;
 }
 
-// Note: LoadUserSettings() and SaveUserSettings() will be called in the callbacks `PostInit` and `BeforeExit`:
+// Note: LoadUserSettings() and SaveUserSettings() will be called in the callbacks `PostInit` and
+// `BeforeExit`:
 //     runnerParams.callbacks.PostInit = [&appState]   { LoadMyAppSettings(appState);};
 //     runnerParams.callbacks.BeforeExit = [&appState] { SaveMyAppSettings(appState);};
-void LoadMyAppSettings(AppState& appState) //
+void LoadMyAppSettings(AppState& appState)  //
 {
     appState.myAppSettings = StringToMyAppSettings(HelloImGui::LoadUserPref("MyAppSettings"));
 }
@@ -205,7 +295,7 @@ void StatusBarGui(AppState& app_state)
     ImGui::Text("Using backend: %s", HelloImGui::GetBackendDescription().c_str());
 }
 
-void LoadFonts(AppState& appState) // This is called by runnerParams.callbacks.LoadAdditionalFonts
+void LoadFonts(AppState& appState)  // This is called by runnerParams.callbacks.LoadAdditionalFonts
 {
     HelloImGui::GetRunnerParams()->callbacks.defaultIconFont = HelloImGui::DefaultIconFont::FontAwesome6;
     // First, load the default font (the default font should be loaded first)
@@ -220,9 +310,11 @@ void LoadFonts(AppState& appState) // This is called by runnerParams.callbacks.L
     HelloImGui::FontLoadingParams fontLoadingParamsChinese;
     fontLoadingParamsChinese.useFullGlyphRange = true;
     fontLoadingParamsChinese.mergeFontAwesome = true;
-    fontLoadingParamsChinese.glyphRanges = HelloImGui::ImWchar2ImWcharPairs(GetGlyphRangesChineseSimplifiedCommon());
+    fontLoadingParamsChinese.glyphRanges =
+        HelloImGui::ImWchar2ImWcharPairs(GetGlyphRangesChineseSimplifiedCommon());
 
-    appState.ChineseFont = HelloImGui::LoadFont("fonts/LXGWWenKaiMonoLite-Regular.ttf", 30.f, fontLoadingParamsChinese);
+    appState.ChineseFont =
+        HelloImGui::LoadFont("fonts/LXGWWenKaiMonoLite-Regular.ttf", 30.f, fontLoadingParamsChinese);
 }
 #ifdef EMSCRIPTEN
 void updateTime(const boost::system::error_code& ec, asio::steady_timer* t, char* time_str, size_t bufsize)
@@ -241,9 +333,14 @@ void updateTime(const asio::error_code& ec, asio::steady_timer* t, char* time_st
     t->async_wait(std::bind(updateTime, std::placeholders::_1, t, time_str, bufsize));
 }
 #ifdef EMSCRIPTEN
-void updateTimer(const boost::system::error_code& ec, asio::steady_timer* t, std::time_t start_time, char* time_str, size_t bufsize)
+void updateTimer(const boost::system::error_code& ec,
+                 asio::steady_timer* t,
+                 std::time_t start_time,
+                 char* time_str,
+                 size_t bufsize)
 #else
-void updateTimer(const asio::error_code& ec, asio::steady_timer* t, std::time_t start_time, char* time_str, size_t bufsize)
+void updateTimer(
+    const asio::error_code& ec, asio::steady_timer* t, std::time_t start_time, char* time_str, size_t bufsize)
 #endif
 {
     if (ec)
@@ -295,16 +392,24 @@ void AlignForWidth(float width, float alignment = 0.5f)
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
 }
 
-enum SCREEN_STATE { Time_S, Timer_S, Setting_S, Timer_End_S, Event_Edit_S };
+enum SCREEN_STATE
+{
+    Time_S,
+    Timer_S,
+    Setting_S,
+    Timer_End_S,
+    Event_List_S,
+    Event_Edit_S
+};
 #define TIME_STR_LEN 20
 void guiFunction(AppState& appState)
 {
-    #ifndef __EMSCRIPTEN__
+#ifndef __EMSCRIPTEN__
     if (tray_loop(0) == -1)
     {
         HelloImGui::GetRunnerParams()->appShallExit = true;
     }
-    #endif
+#endif
     static bool first_time = true;
     static enum SCREEN_STATE current_screen = Time_S;
 
@@ -330,7 +435,7 @@ void guiFunction(AppState& appState)
 
     switch (current_screen)
     {
-    case Time_S:
+        case Time_S:
         {
             static bool first_time = true;
 
@@ -369,10 +474,14 @@ void guiFunction(AppState& appState)
                 printf("Counting started!\n");
                 printf("Start time: %s", std::ctime(&current));
             }
+            if (ButtonCenteredOnLine("Stat"))
+            {
+                current_screen = Event_List_S;
+            }
             ImGui::PopFont();
         }
         break;
-    case Timer_S:
+        case Timer_S:
         {
             static bool first_time = true;
             static char timer_str[TIME_STR_LEN] = "00:00:00";
@@ -387,7 +496,8 @@ void guiFunction(AppState& appState)
                 auto duaration_str = get_duration_str(start_time, std::time(0));
                 strcpy(timer_str, duaration_str.c_str());
                 t.expires_from_now(asio::chrono::seconds(1));
-                t.async_wait(std::bind(updateTimer, std::placeholders::_1, &t, start_time, timer_str, sizeof(timer_str)));
+                t.async_wait(std::bind(
+                    updateTimer, std::placeholders::_1, &t, start_time, timer_str, sizeof(timer_str)));
             }
             first_time = false;
 
@@ -414,7 +524,7 @@ void guiFunction(AppState& appState)
             ImGui::PopFont();
         }
         break;
-    case Setting_S:
+        case Setting_S:
         {
             static bool first_time = true;
             static bool always_on_top = appState.myAppSettings.always_on_top;
@@ -458,7 +568,7 @@ void guiFunction(AppState& appState)
             ImGui::PopFont();
         }
         break;
-    case Timer_End_S:
+        case Timer_End_S:
         {
             static bool first_time = true;
             static bool markdownEdit = true;
@@ -499,23 +609,29 @@ void guiFunction(AppState& appState)
             static auto stopTimeTextWidth = ImGui::CalcTextSize("88m").x;
             ImGuiStyle& style = ImGui::GetStyle();
             float avail = ImGui::GetContentRegionAvail().x;
-            static float itemsWidth = (stopTimeTextWidth + style.FramePadding.x) * 2 + ImGui::CalcTextSize("Duration ").x + ImGui::CalcTextSize("reset").x + style.FramePadding.x * 4;
+            static float itemsWidth = (stopTimeTextWidth + style.FramePadding.x) * 2 +
+                                      ImGui::CalcTextSize("Duration ").x + ImGui::CalcTextSize("reset").x +
+                                      style.FramePadding.x * 4;
             float off = (avail - itemsWidth) * 0.5f;
-            if (off > 0.0f) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
+            if (off > 0.0f)
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
             ImGui::Text("Duration ");
             ImGui::SameLine();
             ImGui::SetNextItemWidth(stopTimeTextWidth);
-            ImGui::DragScalar("##stop_hour", ImGuiDataType_U8, &duration_hour, drag_speed, &hour_min, &hour_max, "%dh");
+            ImGui::DragScalar(
+                "##stop_hour", ImGuiDataType_U8, &duration_hour, drag_speed, &hour_min, &hour_max, "%dh");
             ImGui::SameLine();
             ImGui::SetNextItemWidth(stopTimeTextWidth);
-            ImGui::DragScalar("##stop_min", ImGuiDataType_U8, &duration_min, drag_speed, &min_min, &min_max, "%dm");
+            ImGui::DragScalar(
+                "##stop_min", ImGuiDataType_U8, &duration_min, drag_speed, &min_min, &min_max, "%dm");
             ImGui::SameLine();
             if (ImGui::Button("reset"))
             {
                 reset_duration_time();
             }
 
-            std::string combo_preview_value = choosen_event == event_names.end() ? "" : choosen_event->c_str();
+            std::string combo_preview_value =
+                choosen_event == event_names.end() ? "" : choosen_event->c_str();
             ImGui::Text("Event name");
             ImGui::SameLine();
             ImGui::SetNextItemWidth(HelloImGui::EmSize(7.0f));
@@ -523,31 +639,37 @@ void guiFunction(AppState& appState)
             {
                 if (ImGui::BeginCombo("##event name", combo_preview_value.c_str()))
                 {
-                    for (auto it = event_names.begin(); it != event_names.end(); it++) {
+                    for (auto it = event_names.begin(); it != event_names.end(); it++)
+                    {
                         const bool is_selected = (choosen_event == it);
                         if (ImGui::Selectable(it->c_str(), is_selected))
                             choosen_event = it;
 
-                        // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                        // Set the initial focus when opening the combo (scrolling + keyboard navigation
+                        // focus)
                         if (is_selected)
                             ImGui::SetItemDefaultFocus();
                     }
                     ImGui::EndCombo();
                 }
                 ImGui::SameLine();
-                if(ImGui::Button("Create", ImVec2(ImGui::CalcTextSize("Create").x + style.FramePadding.x*2, 0.0f)))
+                if (ImGui::Button("Create",
+                                  ImVec2(ImGui::CalcTextSize("Create").x + style.FramePadding.x * 2, 0.0f)))
                 {
                     event_create = true;
                 }
-            } else {
+            }
+            else
+            {
                 ImGui::InputText("##event name", event_name, sizeof(event_name));
                 ImGui::SameLine();
-                if(ImGui::Button("Confirm", ImVec2(ImGui::CalcTextSize("Confirm").x + style.FramePadding.x*2, 0.0f)))
+                if (ImGui::Button("Confirm",
+                                  ImVec2(ImGui::CalcTextSize("Confirm").x + style.FramePadding.x * 2, 0.0f)))
                 {
                     if (strlen(event_name) > 0)
                     {
                         create_event_log(event_name, MarkdownInput);
-                        eval_log_line_str((char *)life_controller_core::get_last_append_line().c_str());
+                        eval_log_line_str((char*)life_controller_core::get_last_append_line().c_str());
                     }
                     first_time = true;
                 }
@@ -556,13 +678,18 @@ void guiFunction(AppState& appState)
             if (markdownEdit)
             {
                 ImGui::PushFont(appState.ChineseFont);
-                ImGui::InputTextMultiline("##Markdown Input", MarkdownInput, sizeof(MarkdownInput), HelloImGui::EmToVec2(40.f, 5.f));
+                ImGui::InputTextMultiline("##Markdown Input",
+                                          MarkdownInput,
+                                          sizeof(MarkdownInput),
+                                          HelloImGui::EmToVec2(40.f, 5.f));
                 ImGui::PopFont();
                 if (ButtonCenteredOnLine("Render"))
                 {
                     markdownEdit = false;
                 }
-            } else {
+            }
+            else
+            {
                 ImGui::PushFont(appState.ChineseFont);
                 ImGuiMd::RenderUnindented(MarkdownInput);
                 ImGui::PopFont();
@@ -586,9 +713,14 @@ void guiFunction(AppState& appState)
                 {
                     printf("Event name shouldn't be empty!\n");
                     ImGui::OpenPopup("Event shouldn't empty");
-                } else {
-                    do_event_log(appState.myAppSettings.start_time, appState.myAppSettings.stop_time, combo_preview_value, absl::CEscape(MarkdownInput));
-                    eval_log_line_str((char *)life_controller_core::get_last_append_line().c_str());
+                }
+                else
+                {
+                    do_event_log(appState.myAppSettings.start_time,
+                                 appState.myAppSettings.stop_time,
+                                 combo_preview_value,
+                                 absl::CEscape(MarkdownInput));
+                    eval_log_line_str((char*)life_controller_core::get_last_append_line().c_str());
                     current_screen = Time_S;
                     first_time = true;
                 }
@@ -609,10 +741,16 @@ void guiFunction(AppState& appState)
                     ImGui::Checkbox("Don't ask me next time", &dont_ask_me_next_time);
                     ImGui::PopStyleVar();
 
-                    if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+                    if (ImGui::Button("OK", ImVec2(120, 0)))
+                    {
+                        ImGui::CloseCurrentPopup();
+                    }
                     ImGui::SetItemDefaultFocus();
                     ImGui::SameLine();
-                    if (ImGui::Button("Cancel", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+                    if (ImGui::Button("Cancel", ImVec2(120, 0)))
+                    {
+                        ImGui::CloseCurrentPopup();
+                    }
                     ImGui::EndPopup();
                 }
                 ImGui::PopFont();
@@ -627,25 +765,26 @@ void guiFunction(AppState& appState)
             ImGui::PopFont();
         }
         break;
-    case Event_Edit_S:
+        case Event_List_S:
+            break;
+        case Event_Edit_S:
         {
             // TODO: implement event edit screen
             static bool first_time = true;
         }
         break;
-    default:
-        break;
+        default:
+            break;
     }
 }
 
-void AppPoll()
-{
-    io_service.poll();
-}
+void AppPoll() { io_service.poll(); }
 
 #ifdef EMSCRIPTEN
-extern "C" {
-    void EMSCRIPTEN_KEEPALIVE clean_stuff() {
+extern "C"
+{
+    void EMSCRIPTEN_KEEPALIVE clean_stuff()
+    {
         HelloImGui::GetRunnerParams()->callbacks.BeforeExit();
         SyncEmscriptenToIndexDB();
     }
@@ -661,7 +800,8 @@ std::string linesUnion(const std::string& input1, const std::string& input2)
 }
 #include "app_config.hpp"
 
-int main(int , char *[]) {
+int main(int, char*[])
+{
     set_log_base_dir(LOG_BASE_DIR);
     std::string input1 = R"(a,b,c,d
 e,f,g,h
@@ -683,7 +823,8 @@ k,l,m,n
     CSVReader csv_reader(LOG_BASE_DIR "/" LOGFILE_NAME);
     eval_log_init(csv_reader.csv_reader);
     eval_log();
-    char temp_str[100] = R"(DO      , Thu Apr  4 19:08:41 2024, 10:00:00, test, test, 1712228921, 1712264921)";
+    char temp_str[100] =
+        R"(DO      , Thu Apr  4 19:08:41 2024, 10:00:00, test, test, 1712228921, 1712264921)";
     eval_log_line_str(temp_str);
 
     HelloImGui::RunnerParams runnerParams;
@@ -704,19 +845,21 @@ k,l,m,n
     //
     // Load user settings at `PostInit` and save them at `BeforeExit`
     //
-    runnerParams.callbacks.PostInit = [&appState]   {
+    runnerParams.callbacks.PostInit = [&appState]
+    {
         LoadMyAppSettings(appState);
-        #ifndef __EMSCRIPTEN__
-        if (tray_init(&tray) < 0) {
+#ifndef __EMSCRIPTEN__
+        if (tray_init(&tray) < 0)
+        {
             printf("failed to create tray\n");
             HelloImGui::GetRunnerParams()->appShallExit = true;
         }
-        #endif
+#endif
     };
-    runnerParams.callbacks.BeforeExit = [&appState] { SaveMyAppSettings(appState);};
+    runnerParams.callbacks.BeforeExit = [&appState] { SaveMyAppSettings(appState); };
     runnerParams.callbacks.AfterSwap = AppPoll;
 
-    runnerParams.callbacks.HideWindow = [] {hide_window();};
+    runnerParams.callbacks.HideWindow = [] {  hide_window(); };
 
     runnerParams.imGuiWindowParams.showStatusBar = true;
     // uncomment next line in order to hide the FPS in the status bar
@@ -733,26 +876,26 @@ k,l,m,n
     tweakedTheme.Theme = ImGuiTheme::ImGuiTheme_MaterialFlat;
     tweakedTheme.Tweaks.Rounding = 10.f;
     // 2. Customize ImGui style at startup
-    runnerParams.callbacks.SetupImGuiStyle = []() {
+    runnerParams.callbacks.SetupImGuiStyle = []()
+    {
         // Reduce spacing between items ((8, 4) by default)
         ImGui::GetStyle().ItemSpacing = ImVec2(6.f, 4.f);
     };
 
-    runnerParams.callbacks.ShowGui =  [&] { guiFunction(appState); };
+    runnerParams.callbacks.ShowGui = [&] { guiFunction(appState); };
 
-    #if EMSCRIPTEN
+#if EMSCRIPTEN
     runnerParams.iniFolderType = HelloImGui::IniFolderType::CustomFolder;
     runnerParams.iniFolder = LOG_BASE_DIR;
-    #else
+#else
     runnerParams.iniFolderType = HelloImGui::IniFolderType::AppExecutableFolder;
-    #endif
-
+#endif
 
     // HelloImGui::DeleteIniSettings(runnerParams);
 
     // Optional: choose the backend combination
     // ----------------------------------------
-    //runnerParams.platformBackendType = HelloImGui::PlatformBackendType::Sdl;
+    // runnerParams.platformBackendType = HelloImGui::PlatformBackendType::Sdl;
     // runnerParams.rendererBackendType = HelloImGui::RendererBackendType::Vulkan;
 
     // HelloImGui::Run(runnerParams); // Note: with ImGuiBundle, it is also possible to use ImmApp::Run(...)
@@ -766,7 +909,8 @@ k,l,m,n
     ImGuiMd::MarkdownOptions markdownOptions;
     markdownOptions.fontOptions.fontBasePath = "fonts/LXGWWenKaiMonoLite";
     markdownOptions.fontOptions.regularSize = 24.0f;
-    markdownOptions.fontOptions.glyphRanges = HelloImGui::ImWchar2ImWcharPairs(GetGlyphRangesChineseSimplifiedCommon());
+    markdownOptions.fontOptions.glyphRanges =
+        HelloImGui::ImWchar2ImWcharPairs(GetGlyphRangesChineseSimplifiedCommon());
     addOnsParams.withMarkdownOptions = markdownOptions;
 
     runnerParams.imGuiWindowParams.showStatusBar = true;

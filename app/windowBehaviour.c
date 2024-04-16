@@ -8,25 +8,25 @@
 // __declspec( dllexport )
 void hide_window()
 {
-    #ifndef __EMSCRIPTEN__
+#ifndef __EMSCRIPTEN__
     GLFWwindow* win = glfwGetCurrentContext();
     glfwHideWindow(win);
     SetWindowLong(glfwGetWin32Window(win), GWL_EXSTYLE, WS_EX_TOOLWINDOW);
-    #endif
+#endif
 }
 
 void show_window()
 {
-    #ifndef __EMSCRIPTEN__
+#ifndef __EMSCRIPTEN__
     GLFWwindow* win = glfwGetCurrentContext();
     glfwShowWindow(win);
     SetWindowLong(glfwGetWin32Window(win), GWL_EXSTYLE, WS_EX_APPWINDOW);
-    #endif
+#endif
 }
 
 void always_on_top(bool isAlways_on_top)
 {
-    #ifndef __EMSCRIPTEN__
+#ifndef __EMSCRIPTEN__
     glfwSetWindowAttrib(glfwGetCurrentContext(), GLFW_FLOATING, isAlways_on_top);
-    #endif
+#endif
 }
