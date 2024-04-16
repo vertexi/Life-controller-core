@@ -130,8 +130,6 @@ struct AppState
 {
     MyAppSettings myAppSettings;
 
-    CSVREADER_CLASS *csv_reader;
-
     ImFont* TitleFont = nullptr;
     ImFont* ColorFont = nullptr;
     ImFont* EmojiFont = nullptr;
@@ -547,7 +545,7 @@ void guiFunction(AppState& appState)
                     if (strlen(event_name) > 0)
                     {
                         create_event_log(event_name, MarkdownInput);
-                        eval_log_line_str((*appState.csv_reader), (char *)life_controller_core::get_last_append_line().c_str());
+                        eval_log_line_str((char *)life_controller_core::get_last_append_line().c_str());
                     }
                     first_time = true;
                 }
@@ -588,7 +586,7 @@ void guiFunction(AppState& appState)
                     ImGui::OpenPopup("Event shouldn't empty");
                 } else {
                     do_event_log(appState.myAppSettings.start_time, appState.myAppSettings.stop_time, combo_preview_value, MarkdownInput);
-                    eval_log_line_str((*appState.csv_reader), (char *)life_controller_core::get_last_append_line().c_str());
+                    eval_log_line_str((char *)life_controller_core::get_last_append_line().c_str());
                     current_screen = Time_S;
                     first_time = true;
                 }
@@ -680,12 +678,11 @@ k,l,m,n
     create_goal_log("test", true, 99999, start, end);
     create_goal_log("test", false, 9999999, start, end);
     do_event_log(start, end, "test", "test");
-    io::CSVReader<7> csv_reader(LOG_BASE_DIR "/" LOGFILE_NAME, std::unique_ptr<io::ByteSourceBase>(new FileSourceBase(LOG_BASE_DIR "/" LOGFILE_NAME)));
-    appState.csv_reader = &csv_reader;
-    eval_log_init(csv_reader);
-    eval_log(csv_reader);
+    CSVReader csv_reader(LOG_BASE_DIR "/" LOGFILE_NAME);
+    eval_log_init(csv_reader.csv_reader);
+    eval_log();
     char temp_str[100] = R"(DO      , Thu Apr  4 19:08:41 2024, 10:00:00, test, test, 1712228921, 1712264921)";
-    eval_log_line_str(csv_reader, temp_str);
+    eval_log_line_str(temp_str);
 
     HelloImGui::RunnerParams runnerParams;
     runnerParams.appWindowParams.windowTitle = "Life-controller";

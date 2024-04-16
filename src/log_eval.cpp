@@ -142,13 +142,16 @@ int create_new_event(Document::AllocatorType& allocator, Value& events, std::str
 
 Document d;
 
-int eval_log_init(CSVREADER_CLASS &csv_reader)
+CSVREADER_CLASS *csv_reader = nullptr;
+
+int eval_log_init(CSVREADER_CLASS &csv_reader_)
 {
+    csv_reader = &csv_reader_;
     d.SetObject();
     auto& allocator = d.GetAllocator();
     Value events_init(kObjectType);
     d.AddMember("events", events_init, allocator);
-    csv_reader.set_header("action",
+    csv_reader->set_header("action",
                  "start_time",
                  "duration",
                  "event_name",
@@ -212,7 +215,7 @@ int eval_log_line(std::string action
     return 0;
 }
 
-int eval_log(CSVREADER_CLASS &csv_reader)
+int eval_log()
 {
     std::string action;
     std::string start_time;
@@ -222,7 +225,7 @@ int eval_log(CSVREADER_CLASS &csv_reader)
     std::time_t start_time_t;
     std::time_t end_time_t;
 
-    while(csv_reader.read_row(action, start_time, duration, event_name, event_data, start_time_t, end_time_t))
+    while(csv_reader->read_row(action, start_time, duration, event_name, event_data, start_time_t, end_time_t))
     {
         eval_log_line(action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
     }
@@ -234,7 +237,7 @@ int eval_log(CSVREADER_CLASS &csv_reader)
     return 0;
 }
 
-int eval_log_line_str(CSVREADER_CLASS &csv_reader, char* line)
+int eval_log_line_str(char* line)
 {
     std::string action;
     std::string start_time;
@@ -244,7 +247,7 @@ int eval_log_line_str(CSVREADER_CLASS &csv_reader, char* line)
     std::string event_data;
     std::time_t start_time_t;
     std::time_t end_time_t;
-    csv_reader.read_row_string(line, action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
+    csv_reader->read_row_string(line, action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
     eval_log_line(action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
 
     return 0;

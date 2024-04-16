@@ -23,6 +23,13 @@ public:
 private:
   FILE *file;
 };
+
+class CSVReader {
+  public:
+    io::CSVReader<7> csv_reader;
+    CSVReader(std::string file_path) : csv_reader(file_path, std::unique_ptr<io::ByteSourceBase>(new FileSourceBase(file_path))) {}
+    ~CSVReader() {}
+};
 #endif
 
 #ifdef _WIN32
@@ -43,6 +50,13 @@ public:
 private:
   FILE *file;
 };
+
+class CSVReader {
+  public:
+    io::CSVReader<7> csv_reader;
+    CSVReader(std::string file_path) : csv_reader(file_path, std::unique_ptr<io::ByteSourceBase>(new FileSourceBase(file_path))) {}
+    ~CSVReader() {}
+};
 #endif
 
 #ifdef ESP32
@@ -61,5 +75,11 @@ public:
 
 private:
   fs::File file;
+};
+class CSVReader {
+  public:
+    io::CSVReader<7> csv_reader;
+    CSVReader(std::string file_path) : csv_reader(file_path, std::unique_ptr<io::ByteSourceBase>(new FileSourceBase(file_path))) {}
+    ~CSVReader() {}
 };
 #endif
