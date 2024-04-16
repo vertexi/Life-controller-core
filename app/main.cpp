@@ -26,6 +26,8 @@
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
 
+#include "absl/strings/escaping.h"
+
 struct MyAppSettings
 {
     char device_name[256] = "windows";
@@ -585,7 +587,7 @@ void guiFunction(AppState& appState)
                     printf("Event name shouldn't be empty!\n");
                     ImGui::OpenPopup("Event shouldn't empty");
                 } else {
-                    do_event_log(appState.myAppSettings.start_time, appState.myAppSettings.stop_time, combo_preview_value, MarkdownInput);
+                    do_event_log(appState.myAppSettings.start_time, appState.myAppSettings.stop_time, combo_preview_value, absl::CEscape(MarkdownInput));
                     eval_log_line_str((char *)life_controller_core::get_last_append_line().c_str());
                     current_screen = Time_S;
                     first_time = true;

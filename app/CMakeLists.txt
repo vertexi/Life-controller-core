@@ -52,6 +52,11 @@ if(MSVC)
     target_link_options(Life-controller-app PRIVATE "/NODEFAULTLIB:library")
 endif()
 
+# Process Abseil's CMake build system
+add_subdirectory(abseil-cpp)
+
+target_link_libraries(Life-controller-app PRIVATE absl::strings)
+
 if (NOT EMSCRIPTEN)
     add_custom_command(TARGET Life-controller-app PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/assets/app_settings/icon.ico $<TARGET_FILE_DIR:Life-controller-app>/icon.ico)
     add_custom_command(TARGET Life-controller-app PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/assets/app_settings/icon.png $<TARGET_FILE_DIR:Life-controller-app>/icon.png)

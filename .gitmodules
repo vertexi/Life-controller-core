@@ -5,3 +5,6 @@
 [submodule "app/tray"]
 	path = app/tray
 	url = https://github.com/vertexi/tray
+[submodule "app/abseil-cpp"]
+	path = app/abseil-cpp
+	url = https://github.com/abseil/abseil-cpp
