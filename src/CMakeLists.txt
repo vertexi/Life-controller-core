@@ -14,7 +14,6 @@ target_link_libraries(Life-controller-core INTERFACE rapidjson)
 
 if (EMSCRIPTEN)
     target_compile_options(Life-controller-core PUBLIC -pthread)
-    target_compile_options(Life-controller-core PUBLIC -pthread)
     target_link_options(Life-controller-core PUBLIC -lidbfs.js)
     target_link_options(Life-controller-core PRIVATE -pthread)
     target_link_options(Life-controller-core PRIVATE -sPTHREAD_POOL_SIZE=3)

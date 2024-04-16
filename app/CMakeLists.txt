@@ -5,6 +5,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if (EMSCRIPTEN)
+    add_compile_options(-pthread)
+    add_link_options(-pthread)
+    add_link_options(-sPTHREAD_POOL_SIZE=3)
+endif()
+
 if(MSVC)
     add_compile_options("/utf-8")
     set(HELLOIMGUI_WIN32_NO_CONSOLE OFF CACHE BOOL "Disable console window on Windows" FORCE)
