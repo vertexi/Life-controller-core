@@ -6,9 +6,9 @@
 #include "include/rapidjson/stringbuffer.h"
 #include "include/rapidjson/writer.h"
 #include "io.hpp"
+#include <ctime>
 #include <set>
 #include <string>
-
 
 using namespace rapidjson;
 
@@ -64,11 +64,8 @@ int event_eval_goal(std::string event_data, Value& goal_value, Document::Allocat
                 goal_value.AddMember("progress", Value().SetInt64(0), allocator);
                 return 0;
             }
-            else
-            {
-                puts(("ERROR: " + goal_type + "not found in event_data " + event_data + "\n").c_str());
-                return 1;
-            }
+            puts(("ERROR: " + goal_type + "not found in event_data " + event_data + "\n").c_str());
+            return 1;
         }
     }
     return 1;
@@ -94,7 +91,7 @@ Value& event_eval_log(Value& action_value,
     return action_value;
 }
 
-int event_eval_log_with_goal(Value& event, uint64_t start_time_t, uint64_t end_time_t)
+int event_eval_log_with_goal(Value& event, std::time_t start_time_t, std::time_t end_time_t)
 {
     auto& goals = event["goals"];
     assert(goals.IsArray());

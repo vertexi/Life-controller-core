@@ -1,11 +1,15 @@
-#include <stdio.h>
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
+#include <cstdio>
+#include <cstring>
 #include <string>
 
 #include "config.hpp"
 #include <action.hpp>
 #include <common.hpp>
 #include <log_eval.hpp>
-
 
 #ifndef __EMSCRIPTEN__
 #include "systray.h"
@@ -327,7 +331,7 @@ void updateTime(const asio::error_code& ec, asio::steady_timer* t, char* time_st
         std::cout << "timer error: " << ec.message() << "\n";
         return;
     }
-    std::time_t now = std::time(0);
+    std::time_t now = std::time(nullptr);
     std::strftime(time_str, 20, "%H:%M:%S", std::localtime(&now));
     t->expires_at(t->expiry() + asio::chrono::seconds(1));
     t->async_wait(std::bind(updateTime, std::placeholders::_1, t, time_str, bufsize));
@@ -348,7 +352,7 @@ void updateTimer(
         std::cout << "timer error: " << ec.message() << "\n";
         return;
     }
-    auto duaration_str = get_duration_str(start_time, std::time(0));
+    auto duaration_str = get_duration_str(start_time, std::time(nullptr));
     strcpy(time_str, duaration_str.c_str());
     t->expires_at(t->expiry() + asio::chrono::seconds(1));
     t->async_wait(std::bind(updateTimer, std::placeholders::_1, t, start_time, time_str, bufsize));
@@ -379,8 +383,7 @@ void TextCenteredOnLine(const char* label, float alignment = 0.5f)
     if (off > 0.0f)
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
 
-    ImGui::Text(label);
-    return;
+    ImGui::Text("%s", label);
 }
 
 void AlignForWidth(float width, float alignment = 0.5f)
@@ -417,7 +420,7 @@ void guiFunction(AppState& appState)
     if (first_time)
     {
         always_on_top(appState.myAppSettings.always_on_top);
-        std::time_t now = std::time(0);
+        std::time_t now = std::time(nullptr);
         std::strftime(time_str, TIME_STR_LEN, "%H:%M:%S", std::localtime(&now));
         static asio::steady_timer t(io_service, asio::chrono::seconds(1));
         t.async_wait(std::bind(updateTime, std::placeholders::_1, &t, time_str, sizeof(time_str)));
@@ -469,7 +472,7 @@ void guiFunction(AppState& appState)
             {
                 appState.myAppSettings.counting = true;
                 current_screen = Timer_S;
-                std::time_t current = std::time(0);
+                std::time_t current = std::time(nullptr);
                 appState.myAppSettings.start_time = current;
                 printf("Counting started!\n");
                 printf("Start time: %s", std::ctime(&current));
@@ -488,12 +491,12 @@ void guiFunction(AppState& appState)
             static asio::steady_timer t(io_service, asio::chrono::seconds(1));
             if (first_time)
             {
-                std::time_t start_time = std::time(0);
+                std::time_t start_time = std::time(nullptr);
                 if (appState.myAppSettings.counting)
                 {
                     start_time = appState.myAppSettings.start_time;
                 }
-                auto duaration_str = get_duration_str(start_time, std::time(0));
+                auto duaration_str = get_duration_str(start_time, std::time(nullptr));
                 strcpy(timer_str, duaration_str.c_str());
                 t.expires_from_now(asio::chrono::seconds(1));
                 t.async_wait(std::bind(
@@ -514,7 +517,7 @@ void guiFunction(AppState& appState)
             {
                 strcpy(timer_str, "00:00:00");
                 appState.myAppSettings.counting = false;
-                appState.myAppSettings.stop_time = std::time(0);
+                appState.myAppSettings.stop_time = std::time(nullptr);
                 current_screen = Timer_End_S;
                 printf("Counting stopped!\n");
                 printf("Start time: %s", std::ctime(&appState.myAppSettings.start_time));
@@ -731,7 +734,7 @@ void guiFunction(AppState& appState)
                 ImVec2 center = ImGui::GetMainViewport()->GetCenter();
                 ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-                if (ImGui::BeginPopupModal("Event shouldn't empty", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+                if (ImGui::BeginPopupModal("Event shouldn't empty", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
                 {
                     ImGui::Text("Please choose one event.");
                     ImGui::Separator();
@@ -813,7 +816,7 @@ k,l,m,n
     std::cout << result << std::endl;
     AppState appState;
 
-    std::time_t start = std::time(0);
+    std::time_t start = std::time(nullptr);
     std::time_t end = start + 10 * 60 * 60;
     create_event_log("test", "test event");
     create_goal_log("test", true, 10, start, end);

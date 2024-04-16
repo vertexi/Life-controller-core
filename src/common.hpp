@@ -9,7 +9,6 @@ std::string get_duration_str(std::time_t start_time, std::time_t end_time);
 std::string get_duration_str(std::time_t duration_time);
 #include <algorithm>
 #include <cctype>
-#include <locale>
 
 // trim from start (in place)
 inline void ltrim(std::string &s)

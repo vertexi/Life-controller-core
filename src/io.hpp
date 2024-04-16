@@ -1,5 +1,5 @@
 #include <string>
-int append_file(std::string file_path, std::string file_content);
+int append_file(const std::string &file_path, const std::string &file_content);
 void set_log_base_dir(std::string dir);
 
 #ifdef __EMSCRIPTEN__

@@ -1,12 +1,11 @@
 #include "io.hpp"
-#include <stdio.h>
-
 
 static std::string log_base_dir = "";
 
 void set_log_base_dir(std::string dir) { log_base_dir = dir; }
 
 #ifdef EMSCRIPTEN
+#include <stdio.h>
 #include <fstream>
 
 // Sync Emscripten => IndexedDB
@@ -20,7 +19,7 @@ void SyncEmscriptenToIndexDB()
     emscripten_run_script(script.c_str());
 }
 
-int append_file(std::string file_path, std::string file_content)
+int append_file(const std::string &file_path, const std::string &file_content)
 {
     std::ofstream outfile;
     outfile.open(log_base_dir + "/" + file_path, std::ios_base::app);
@@ -33,7 +32,7 @@ int append_file(std::string file_path, std::string file_content)
 
 #ifdef _WIN32
 #include <fstream>
-int append_file(std::string file_path, std::string file_content)
+int append_file(const std::string &file_path, const std::string &file_content)
 {
     std::ofstream outfile;
     outfile.open(log_base_dir + "/" + file_path, std::ios_base::app);
@@ -45,7 +44,7 @@ int append_file(std::string file_path, std::string file_content)
 #ifdef ESP32
 #include <LittleFS.h>
 
-int append_file(std::string file_path, std::string file_content)
+int append_file(const std::string &file_path, const std::string &file_content)
 {
     File file = LittleFS.open((log_base_dir + "/" + file_path).c_str(), FILE_APPEND);
     if (!file)
