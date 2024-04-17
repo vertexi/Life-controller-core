@@ -804,6 +804,20 @@ std::string linesUnion(const std::string& input1, const std::string& input2)
     using namespace fplus;
     return join(std::string("\n"), nub(append(split_lines(false, input1), split_lines(false, input2))));
 }
+
+TEST_CASE("linesUnion") {
+    std::string input1 = R"(a,b,c,d
+e,f,g,h
+)";
+    std::string input2 = R"(a,b,c,d
+k,l,m,n
+)";
+    std::string result = linesUnion(input1, input2);
+    CHECK(result == std::string(R"(a,b,c,d
+e,f,g,h
+k,l,m,n)"));
+}
+
 #include "app_config.hpp"
 
 int main(int argc, char** argv)
@@ -832,14 +846,7 @@ int main(int argc, char** argv)
     printf("hello world!\n");
 
     set_log_base_dir(LOG_BASE_DIR);
-    std::string input1 = R"(a,b,c,d
-e,f,g,h
-)";
-    std::string input2 = R"(a,b,c,d
-k,l,m,n
-)";
-    std::string result = linesUnion(input1, input2);
-    std::cout << result << std::endl;
+
     AppState appState;
 
     std::time_t start = std::time(nullptr);
