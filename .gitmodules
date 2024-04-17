@@ -8,3 +8,6 @@
 [submodule "app/abseil-cpp"]
 	path = app/abseil-cpp
 	url = https://github.com/abseil/abseil-cpp
+[submodule "app/doctest"]
+	path = app/doctest
+	url = https://github.com/doctest/doctest

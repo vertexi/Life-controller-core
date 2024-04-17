@@ -63,6 +63,10 @@ add_subdirectory(abseil-cpp)
 
 target_link_libraries(Life-controller-app PRIVATE absl::strings)
 
+set(doctest_header_dir "${CMAKE_CURRENT_SOURCE_DIR}/doctest/doctest")
+target_include_directories(Life-controller-app PRIVATE ${doctest_header_dir})
+
+
 if (NOT EMSCRIPTEN)
     add_custom_command(TARGET Life-controller-app PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/assets/app_settings/icon.ico $<TARGET_FILE_DIR:Life-controller-app>/icon.ico)
     add_custom_command(TARGET Life-controller-app PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/assets/app_settings/icon.png $<TARGET_FILE_DIR:Life-controller-app>/icon.png)
