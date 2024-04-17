@@ -1,5 +1,4 @@
 build/
 build_emscripten/
-.vscode/
 .cache/
 assets/
