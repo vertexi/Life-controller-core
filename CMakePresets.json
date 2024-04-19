@@ -17,6 +17,23 @@
             }
         },
         {
+            "name": "build_default_glfw_release",
+            "description": "Build with default settings (opengl3 and glfw). You need to create a build directory and run from it",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/relaese",
+          "cacheVariables": {
+            "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+            "HELLOIMGUI_USE_GLFW3": "ON",
+            "HELLOIMGUI_HAS_OPENGL3": "ON",
+            "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+            "CMAKE_C_COMPILER": "clang-cl",
+            "CMAKE_CXX_COMPILER": "clang-cl",
+            "CMAKE_BUILD_TYPE": "Release",
+            "CMAKE_C_FLAGS_RELEASE": "/O2",
+            "CMAKE_CXX_FLAGS_RELEASE": "/O2"
+          }
+        },
+        {
             "name": "build_emscripten",
             "description": "build emscripten",
             "generator": "Ninja",

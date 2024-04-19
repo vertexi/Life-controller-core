@@ -69,6 +69,20 @@ target_link_libraries(Life-controller-app PRIVATE absl::strings)
 set(doctest_header_dir "${CMAKE_CURRENT_SOURCE_DIR}/doctest/doctest")
 target_include_directories(Life-controller-app PRIVATE ${doctest_header_dir})
 
+add_subdirectory(imlottie)
+target_link_libraries(Life-controller-app PRIVATE imlottie)
+
+set(IMLOTTIE_TEST ON CACHE BOOL "" FORCE)
+
+option(IMLOTTIE_TEST "test imlottie" OFF)
+
+if(IMLOTTIE_TEST)
+    if(EMSCRIPTEN)
+        add_custom_command(TARGET Life-controller-app PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${IMLOTTIE_DIR}/test ${CMAKE_CURRENT_LIST_DIR}/assets/imlottie_test)
+    else()
+        add_custom_command(TARGET Life-controller-app PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${IMLOTTIE_DIR}/test $<TARGET_FILE_DIR:Life-controller-app>/imlottie_test)
+    endif()
+endif()
 
 if (NOT EMSCRIPTEN)
     # copy assets to target folder
@@ -77,4 +91,14 @@ if (NOT EMSCRIPTEN)
 else()
     # generate the *.dwp file to debug faster
     add_custom_command(TARGET Life-controller-app POST_BUILD COMMAND llvm-dwp -e $<TARGET_FILE_DIR:Life-controller-app>/Life-controller-app.wasm -o $<TARGET_FILE_DIR:Life-controller-app>/Life-controller-app.wasm.dwp)
+endif()
+
+# add playground for testing imgui features
+if (MSVC)
+    if(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/hello_imgui_demodocking)
+        add_subdirectory(hello_imgui_demodocking)
+    endif()
+    if(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/hello_imgui_demo_classic)
+        add_subdirectory(hello_imgui_demo_classic)
+    endif()
 endif()

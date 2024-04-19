@@ -23,11 +23,13 @@
 #include <ctime>
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "hello_imgui/hello_imgui.h"
+#include "hello_imgui/hello_imgui_assets.h"
 #include "hello_imgui/icons_font_awesome_6.h"
 #include "imgui_internal.h"
 #include "imgui_md_wrapper.h"
 #include "immapp/immapp.h"
 #include <sstream>
+#include <fstream>
 
 
 #include "rapidjson/document.h"
@@ -37,6 +39,14 @@
 
 
 #include "absl/strings/escaping.h"
+
+#ifdef HELLOIMGUI_HAS_OPENGL3
+#define HELLOIMGUI_HAS_IMLOTTIE
+#define IMLOTTIE_OPENGL_IMPLEMENTATION
+#define IMLOTTIE_SIMPLE_IMPLEMENTATION
+#define IMLOTTIE_DEMO
+#include "imlottie.h"
+#endif
 
 struct MyAppSettings
 {
@@ -415,6 +425,15 @@ void guiFunction(AppState& appState)
     {
         HelloImGui::GetRunnerParams()->appShallExit = true;
     }
+#endif
+#ifdef HELLOIMGUI_HAS_IMLOTTIE
+
+#ifdef EMSCRIPTEN
+    ImLottie::demoAnimations(HelloImGui::AssetFileFullPath("imlottie_test/"));
+#else
+    ImLottie::demoAnimations("imlottie_test/");
+#endif
+
 #endif
     static bool first_time = true;
     static enum SCREEN_STATE current_screen = Time_S;
@@ -845,6 +864,13 @@ int main(int argc, char** argv)
     // your program - if the testing framework is integrated in your production code
     printf("hello world!\n");
 
+    std::ifstream ifs(HelloImGui::AssetFileFullPath("hello.txt"));
+    if (ifs.good())
+    {
+        std::cout << ifs.rdbuf() << std::endl;
+    }
+    ifs.close();
+
     set_log_base_dir(LOG_BASE_DIR);
 
     AppState appState;
@@ -890,6 +916,15 @@ int main(int argc, char** argv)
             printf("failed to create tray\n");
             HelloImGui::GetRunnerParams()->appShallExit = true;
         }
+#endif
+#ifdef HELLOIMGUI_HAS_IMLOTTIE
+        ImLottie::init();
+#endif
+    };
+    runnerParams.callbacks.BeforeImGuiRender = [&appState]()
+    {
+#ifdef HELLOIMGUI_HAS_IMLOTTIE
+        ImLottie::sync();
 #endif
     };
     runnerParams.callbacks.BeforeExit = [&appState] { SaveMyAppSettings(appState); };

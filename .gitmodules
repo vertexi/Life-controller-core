@@ -11,3 +11,6 @@
 [submodule "app/doctest"]
 	path = app/doctest
 	url = https://github.com/doctest/doctest
+[submodule "app/imlottie"]
+	path = app/imlottie
+	url = https://github.com/vertexi/imlottie
