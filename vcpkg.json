@@ -2,6 +2,8 @@
     "name": "life-controller-app",
     "version": "0.0",
     "dependencies": [
-      "asio"
+      "asio",
+      "freetype",
+      "glfw3"
     ]
 }
