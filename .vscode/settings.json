@@ -1,11 +1,16 @@
 {
     "C_Cpp.intelliSenseEngine": "disabled",
     "clangd.path": "clangd",
-    "clangd.arguments": ["-log=verbose",
-                         "-pretty",
-                         "--background-index",
-                         //"--query-driver=/bin/arm-buildroot-linux-gnueabihf-g++", //for cross compile usage
-                         "--compile-commands-dir=${workspaceFolder}/build"],
+    "clangd.arguments": [
+                        // "-log=verbose",
+                        // "-pretty",
+                        "--background-index",
+                        //"--query-driver=/bin/arm-buildroot-linux-gnueabihf-g++", //for cross compile usage
+                        "--compile-commands-dir=${workspaceFolder}/build",
+                        "-j=8",
+                    //  "--malloc-trim",
+                        "--pch-storage=memory",
+                        "--clang-tidy=false"],
     "testMate.cpp.test.advancedExecutables": [
     {
         "pattern": "{build,Build,BUILD,out,Out,OUT}/**/*{test,Test,TEST,app}*",

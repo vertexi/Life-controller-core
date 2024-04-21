@@ -252,7 +252,7 @@ int eval_log()
 
     event_eval_total_duration(d);
 
-    print_json(d);
+    // print_json(d);
 
     return 0;
 }

@@ -14,3 +14,6 @@
 [submodule "app/imlottie"]
 	path = app/imlottie
 	url = https://github.com/vertexi/imlottie
+[submodule "app/fonts/character_set"]
+	path = app/fonts/character_set
+	url = https://github.com/rime-aca/character_set

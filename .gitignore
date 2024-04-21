@@ -4,3 +4,4 @@ build_emscripten/
 assets/
 app/hello_imgui_demodocking/
 app/hello_imgui_demo_classic/
+*.ttf

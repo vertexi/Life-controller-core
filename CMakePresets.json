@@ -20,7 +20,7 @@
             "name": "build_default_glfw_release",
             "description": "Build with default settings (opengl3 and glfw). You need to create a build directory and run from it",
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/relaese",
+            "binaryDir": "${sourceDir}/build/release",
           "cacheVariables": {
             "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
             "HELLOIMGUI_USE_GLFW3": "ON",
@@ -44,6 +44,19 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_C_FLAGS_DEBUG": "-g -gsplit-dwarf -O0",
                 "CMAKE_CXX_FLAGS_DEBUG": "-g -gsplit-dwarf -O0"
+            }
+        },
+        {
+            "name": "build_emscripten_release",
+            "description": "build emscripten",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build_emscripten/release",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_FLAGS_RELEASE": "-Os",
+                "CMAKE_CXX_FLAGS_RELEASE": "-Os"
             }
         },
         {

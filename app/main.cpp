@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <ctime>
+#include <chrono>
 
 #include "config.hpp"
 #include <action.hpp>
@@ -20,7 +22,6 @@
 #include <emscripten.h>
 #endif
 
-#include <ctime>
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "hello_imgui/hello_imgui.h"
 #include "hello_imgui/hello_imgui_assets.h"
@@ -43,10 +44,12 @@
 #ifdef HELLOIMGUI_HAS_OPENGL3
 #define HELLOIMGUI_HAS_IMLOTTIE
 #define IMLOTTIE_OPENGL_IMPLEMENTATION
-#define IMLOTTIE_SIMPLE_IMPLEMENTATION
+// #define IMLOTTIE_SIMPLE_IMPLEMENTATION
 #define IMLOTTIE_DEMO
 #include "imlottie.h"
 #endif
+
+#include "fonts/LXGWWenKaiMonoLite.hpp"
 
 struct MyAppSettings
 {
@@ -325,13 +328,10 @@ void LoadFonts(AppState& appState)  // This is called by runnerParams.callbacks.
     appState.TimeFontSmall = HelloImGui::LoadFont("fonts/Roboto/Roboto-BoldItalic.ttf", 30.f);
 
     HelloImGui::FontLoadingParams fontLoadingParamsChinese;
-    fontLoadingParamsChinese.useFullGlyphRange = true;
     fontLoadingParamsChinese.mergeFontAwesome = true;
     fontLoadingParamsChinese.glyphRanges =
         HelloImGui::ImWchar2ImWcharPairs(GetGlyphRangesChineseSimplifiedCommon());
-
-    appState.ChineseFont =
-        HelloImGui::LoadFont("fonts/LXGWWenKaiMonoLite-Regular.ttf", 30.f, fontLoadingParamsChinese);
+    appState.ChineseFont = HelloImGui::LoadFont((void *)get_LXGWWenKaiMonoLite_Regular(), get_LXGWWenKaiMonoLite_RegularItalic_size(), 30.f, fontLoadingParamsChinese);
 }
 #ifdef EMSCRIPTEN
 void updateTime(const boost::system::error_code& ec, asio::steady_timer* t, char* time_str, size_t bufsize)
@@ -837,6 +837,14 @@ e,f,g,h
 k,l,m,n)"));
 }
 
+TEST_CASE("file reading") {
+    std::ifstream file(HelloImGui::AssetFileFullPath("hello.txt"));
+    CHECK(file.good());
+    std::string content{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+    CHECK(content == std::string("file reading test."));
+    file.close();
+}
+
 #include "app_config.hpp"
 
 int main(int argc, char** argv)
@@ -861,15 +869,10 @@ int main(int argc, char** argv)
         return res;          // propagate the result of the tests
 
     int client_stuff_return_code = 0;
+
+    auto startup_time = std::chrono::steady_clock::now();
     // your program - if the testing framework is integrated in your production code
     printf("hello world!\n");
-
-    std::ifstream ifs(HelloImGui::AssetFileFullPath("hello.txt"));
-    if (ifs.good())
-    {
-        std::cout << ifs.rdbuf() << std::endl;
-    }
-    ifs.close();
 
     set_log_base_dir(LOG_BASE_DIR);
 
@@ -901,14 +904,20 @@ int main(int argc, char** argv)
     runnerParams.appWindowParams.borderlessClosable = true;
     runnerParams.appWindowParams.borderlessHideable = true;
 
+    runnerParams.fpsIdling.enableIdling = false;
+
     // Load additional font
     runnerParams.callbacks.LoadAdditionalFonts = [&appState]() { LoadFonts(appState); };
 
     //
     // Load user settings at `PostInit` and save them at `BeforeExit`
     //
-    runnerParams.callbacks.PostInit = [&appState]
+    runnerParams.callbacks.PostInit = [&appState, &startup_time]
     {
+        std::cout << "Program has been running for "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startup_time).count()
+            << " milliseconds"
+            << std::endl;
         LoadMyAppSettings(appState);
 #ifndef __EMSCRIPTEN__
         if (tray_init(&tray) < 0)
@@ -934,7 +943,7 @@ int main(int argc, char** argv)
 
     runnerParams.imGuiWindowParams.showStatusBar = true;
     // uncomment next line in order to hide the FPS in the status bar
-    // runnerParams.imGuiWindowParams.showStatusFps = false;
+    runnerParams.imGuiWindowParams.showStatus_Fps = true;
     runnerParams.callbacks.ShowStatus = [&appState]() { StatusBarGui(appState); };
 
     runnerParams.imGuiWindowParams.showMenuBar = false;
@@ -978,10 +987,17 @@ int main(int argc, char** argv)
     addOnsParams.withTexInspect = true;
 
     ImGuiMd::MarkdownOptions markdownOptions;
-    markdownOptions.fontOptions.fontBasePath = "fonts/LXGWWenKaiMonoLite";
+    // markdownOptions.fontOptions.fontBasePath = "fonts/LXGWWenKaiMonoLite";
     markdownOptions.fontOptions.regularSize = 24.0f;
     markdownOptions.fontOptions.glyphRanges =
         HelloImGui::ImWchar2ImWcharPairs(GetGlyphRangesChineseSimplifiedCommon());
+    markdownOptions.fontOptions.markdownEmphasisTofontMemory = {
+        {ImGuiMd::ImGuiMdFonts::MarkdownEmphasis {.italic = false, .bold = false}, {get_LXGWWenKaiMonoLite_Regular(), get_LXGWWenKaiMonoLite_RegularItalic_size()}},
+        {ImGuiMd::ImGuiMdFonts::MarkdownEmphasis {.italic = true, .bold = false}, {get_LXGWWenKaiMonoLite_RegularItalic(), get_LXGWWenKaiMonoLite_RegularItalic_size()}},
+        {ImGuiMd::ImGuiMdFonts::MarkdownEmphasis {.italic = false, .bold = true}, {get_LXGWWenKaiMonoLite_Bold(), get_LXGWWenKaiMonoLite_Bold_size()}},
+        {ImGuiMd::ImGuiMdFonts::MarkdownEmphasis {.italic = true, .bold = true}, {get_LXGWWenKaiMonoLite_BoldItalic(), get_LXGWWenKaiMonoLite_BoldItalic_size()}},
+    };
+
     addOnsParams.withMarkdownOptions = markdownOptions;
 
     runnerParams.imGuiWindowParams.showStatusBar = true;

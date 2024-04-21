@@ -2,10 +2,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch",
+            "name": "Launch_debug",
             "type": "chrome",
             "request": "launch",
             "url": "http://localhost:3000/build_emscripten/app/${command:cmake.launchTargetFilename}",
+            "preLaunchTask": "StartServer",
+        },
+        {
+            "name": "Launch_release",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:3000/build_emscripten/release/app/${command:cmake.launchTargetFilename}",
             "preLaunchTask": "StartServer",
         }
     ]
