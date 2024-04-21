@@ -29,8 +29,8 @@
             "CMAKE_C_COMPILER": "clang-cl",
             "CMAKE_CXX_COMPILER": "clang-cl",
             "CMAKE_BUILD_TYPE": "Release",
-            "CMAKE_C_FLAGS_RELEASE": "/O2",
-            "CMAKE_CXX_FLAGS_RELEASE": "/O2"
+            "CMAKE_C_FLAGS_RELEASE": "/Ofast",
+            "CMAKE_CXX_FLAGS_RELEASE": "/Ofast"
           }
         },
         {

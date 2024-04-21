@@ -42,6 +42,10 @@ if (EMSCRIPTEN)
     target_link_options(Life-controller-app PRIVATE -sFORCE_FILESYSTEM)
     # use IDBFS for emscripten storage presistence data
     target_link_options(Life-controller-app PUBLIC -lidbfs.js)
+
+    execute_process(COMMAND em++ --cflags OUTPUT_VARIABLE EM_CFLAGS)
+
+    set_target_properties(Life-controller-app PROPERTIES COMPILE_FLAGS "${EM_CFLAGS}")
 endif()
 
 if (NOT EMSCRIPTEN)
