@@ -5,11 +5,12 @@
 #define DOCTEST_CONFIG_IMPLEMENT
 #include "doctest_header.h"
 
+#include <chrono>
 #include <cstdio>
 #include <cstring>
-#include <string>
 #include <ctime>
-#include <chrono>
+#include <string>
+
 
 #include "config.hpp"
 #include <action.hpp>
@@ -29,15 +30,12 @@
 #include "imgui_internal.h"
 #include "imgui_md_wrapper.h"
 #include "immapp/immapp.h"
-#include <sstream>
 #include <fstream>
-
 
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
-
 
 #include "absl/strings/escaping.h"
 
@@ -331,7 +329,10 @@ void LoadFonts(AppState& appState)  // This is called by runnerParams.callbacks.
     fontLoadingParamsChinese.mergeFontAwesome = true;
     fontLoadingParamsChinese.glyphRanges =
         HelloImGui::ImWchar2ImWcharPairs(GetGlyphRangesChineseSimplifiedCommon());
-    appState.ChineseFont = HelloImGui::LoadFont((void *)get_LXGWWenKaiMonoLite_Regular(), get_LXGWWenKaiMonoLite_RegularItalic_size(), 30.f, fontLoadingParamsChinese);
+    appState.ChineseFont = HelloImGui::LoadFont((void*)get_LXGWWenKaiMonoLite_Regular(),
+                                                get_LXGWWenKaiMonoLite_RegularItalic_size(),
+                                                30.f,
+                                                fontLoadingParamsChinese);
 }
 #ifdef EMSCRIPTEN
 void updateTime(const boost::system::error_code& ec, asio::steady_timer* t, char* time_str, size_t bufsize)
@@ -756,7 +757,8 @@ void guiFunction(AppState& appState)
                 ImVec2 center = ImGui::GetMainViewport()->GetCenter();
                 ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-                if (ImGui::BeginPopupModal("Event shouldn't empty", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+                if (ImGui::BeginPopupModal(
+                        "Event shouldn't empty", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
                 {
                     ImGui::Text("Please choose one event.");
                     ImGui::Separator();
@@ -824,7 +826,8 @@ std::string linesUnion(const std::string& input1, const std::string& input2)
     return join(std::string("\n"), nub(append(split_lines(false, input1), split_lines(false, input2))));
 }
 
-TEST_CASE("linesUnion") {
+TEST_CASE("linesUnion")
+{
     std::string input1 = R"(a,b,c,d
 e,f,g,h
 )";
@@ -837,7 +840,8 @@ e,f,g,h
 k,l,m,n)"));
 }
 
-TEST_CASE("file reading") {
+TEST_CASE("file reading")
+{
     std::ifstream file(HelloImGui::AssetFileFullPath("hello.txt"));
     CHECK(file.good());
     std::string content{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
@@ -854,19 +858,19 @@ int main(int argc, char** argv)
     // !!! THIS IS JUST AN EXAMPLE SHOWING HOW DEFAULTS/OVERRIDES ARE SET !!!
 
     // defaults
-    context.addFilter("test-case-exclude", "*math*"); // exclude test cases with "math" in their name
-    context.setOption("abort-after", 5);              // stop test execution after 5 failed assertions
-    context.setOption("order-by", "name");            // sort the test cases by their name
+    context.addFilter("test-case-exclude", "*math*");  // exclude test cases with "math" in their name
+    context.setOption("abort-after", 5);               // stop test execution after 5 failed assertions
+    context.setOption("order-by", "name");             // sort the test cases by their name
 
     context.applyCommandLine(argc, argv);
 
     // overrides
-    context.setOption("no-breaks", true);             // don't break in the debugger when assertions fail
+    context.setOption("no-breaks", true);  // don't break in the debugger when assertions fail
 
-    int res = context.run(); // run
+    int res = context.run();  // run
 
-    if(context.shouldExit()) // important - query flags (and --exit) rely on the user doing this
-        return res;          // propagate the result of the tests
+    if (context.shouldExit())  // important - query flags (and --exit) rely on the user doing this
+        return res;            // propagate the result of the tests
 
     int client_stuff_return_code = 0;
 
@@ -915,9 +919,10 @@ int main(int argc, char** argv)
     runnerParams.callbacks.PostInit = [&appState, &startup_time]
     {
         std::cout << "Program has been running for "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startup_time).count()
-            << " milliseconds"
-            << std::endl;
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() -
+                                                                           startup_time)
+                         .count()
+                  << " milliseconds" << std::endl;
         LoadMyAppSettings(appState);
 #ifndef __EMSCRIPTEN__
         if (tray_init(&tray) < 0)
@@ -939,7 +944,7 @@ int main(int argc, char** argv)
     runnerParams.callbacks.BeforeExit = [&appState] { SaveMyAppSettings(appState); };
     runnerParams.callbacks.AfterSwap = AppPoll;
 
-    runnerParams.callbacks.HideWindow = [] {  hide_window(); };
+    runnerParams.callbacks.HideWindow = [] { hide_window(); };
 
     runnerParams.imGuiWindowParams.showStatusBar = true;
     // uncomment next line in order to hide the FPS in the status bar
@@ -992,10 +997,14 @@ int main(int argc, char** argv)
     markdownOptions.fontOptions.glyphRanges =
         HelloImGui::ImWchar2ImWcharPairs(GetGlyphRangesChineseSimplifiedCommon());
     markdownOptions.fontOptions.markdownEmphasisTofontMemory = {
-        {ImGuiMd::ImGuiMdFonts::MarkdownEmphasis {.italic = false, .bold = false}, {get_LXGWWenKaiMonoLite_Regular(), get_LXGWWenKaiMonoLite_RegularItalic_size()}},
-        {ImGuiMd::ImGuiMdFonts::MarkdownEmphasis {.italic = true, .bold = false}, {get_LXGWWenKaiMonoLite_RegularItalic(), get_LXGWWenKaiMonoLite_RegularItalic_size()}},
-        {ImGuiMd::ImGuiMdFonts::MarkdownEmphasis {.italic = false, .bold = true}, {get_LXGWWenKaiMonoLite_Bold(), get_LXGWWenKaiMonoLite_Bold_size()}},
-        {ImGuiMd::ImGuiMdFonts::MarkdownEmphasis {.italic = true, .bold = true}, {get_LXGWWenKaiMonoLite_BoldItalic(), get_LXGWWenKaiMonoLite_BoldItalic_size()}},
+        {ImGuiMd::ImGuiMdFonts::MarkdownEmphasis{.italic = false, .bold = false},
+         {get_LXGWWenKaiMonoLite_Regular(), get_LXGWWenKaiMonoLite_RegularItalic_size()}},
+        {ImGuiMd::ImGuiMdFonts::MarkdownEmphasis{.italic = true, .bold = false},
+         {get_LXGWWenKaiMonoLite_RegularItalic(), get_LXGWWenKaiMonoLite_RegularItalic_size()}},
+        {ImGuiMd::ImGuiMdFonts::MarkdownEmphasis{.italic = false, .bold = true},
+         {get_LXGWWenKaiMonoLite_Bold(), get_LXGWWenKaiMonoLite_Bold_size()}},
+        {ImGuiMd::ImGuiMdFonts::MarkdownEmphasis{.italic = true, .bold = true},
+         {get_LXGWWenKaiMonoLite_BoldItalic(), get_LXGWWenKaiMonoLite_BoldItalic_size()}},
     };
 
     addOnsParams.withMarkdownOptions = markdownOptions;
@@ -1003,5 +1012,5 @@ int main(int argc, char** argv)
     runnerParams.imGuiWindowParams.showStatusBar = true;
     ImmApp::Run(runnerParams, addOnsParams);
 
-    return res + client_stuff_return_code; // the result from doctest is propagated here as well
+    return res + client_stuff_return_code;  // the result from doctest is propagated here as well
 }
