@@ -30,7 +30,7 @@ for ttf_file in ttf_files:
             "--unicodes=0x20-0xFF", \
             "--unicodes+=0x2000-0x206F", \
             "--unicodes+=0x3000-0x30FF", \
-            '--text-file=./character_set/GB2312.txt', \
+            '--text-file=./character_set/GB2312withSymbols.txt', \
             f"--output-file=../assets/fonts/{ttf_file}", \
             f"--font-file={ttf_file}"],
             stdout=sys.stdout.buffer,
@@ -43,7 +43,7 @@ for ttf_file in ttf_files:
         "--unicodes=0x20-0xFF", \
         "--unicodes+=0x2000-0x206F", \
         "--unicodes+=0x3000-0x30FF", \
-        '--text-file=./character_set/GB2312.txt', \
+        '--text-file=./character_set/GB2312withSymbols.txt', \
         "--output-file=temp.font", \
         f"--font-file={ttf_file}"],
         stdout=sys.stdout.buffer,

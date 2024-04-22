@@ -16,4 +16,4 @@
 	url = https://github.com/vertexi/imlottie
 [submodule "app/fonts/character_set"]
 	path = app/fonts/character_set
-	url = https://github.com/rime-aca/character_set
+	url = https://github.com/vertexi/character_set
