@@ -2,6 +2,9 @@
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
+#define STRINGIZE_DETAIL(x) #x
+#define STRINGIZE(x) STRINGIZE_DETAIL(x)
+
 #define DOCTEST_CONFIG_IMPLEMENT
 #include "doctest_header.h"
 
@@ -16,6 +19,7 @@
 #include <action.hpp>
 #include <common.hpp>
 #include <log_eval.hpp>
+#include <analysis.hpp>
 
 #ifndef __EMSCRIPTEN__
 #include "systray.h"
@@ -882,19 +886,17 @@ int main(int argc, char** argv)
 
     AppState appState;
 
-    std::time_t start = std::time(nullptr);
-    std::time_t end = start + 10 * 60 * 60;
-    create_event_log("test", "test event");
-    create_goal_log("test", true, 10, start, end);
-    create_goal_log("test", true, 99999, start, end);
-    create_goal_log("test", false, 9999999, start, end);
-    do_event_log(start, end, "test", "test");
+    // std::time_t start = std::time(nullptr);
+    // std::time_t end = start + 10 * 60 * 60;
+    // create_event_log("test", "test event");
+    // create_goal_log("test", true, 10, start, end);
+    // create_goal_log("test", true, 99999, start, end);
+    // create_goal_log("test", false, 9999999, start, end);
+    // do_event_log(start, end, "test", "test" STRINGIZE(__COUNTER__));
     CSVReader csv_reader(LOG_BASE_DIR "/" LOGFILE_NAME);
     eval_log_init(csv_reader.csv_reader);
     eval_log();
-    char temp_str[100] =
-        R"(DO      , Thu Apr  4 19:08:41 2024, 10:00:00, test, test, 1712228921, 1712264921)";
-    eval_log_line_str(temp_str);
+    get_all_event_log();
 
     HelloImGui::RunnerParams runnerParams;
     runnerParams.appWindowParams.windowTitle = "Life-controller";

@@ -1,5 +1,6 @@
 #include "common.hpp"
 #include "config.hpp"
+#include "app_config.hpp"
 #include "include/fast-cpp-csv-parser/csv.h"
 #include "include/rapidjson/document.h"
 #include "include/rapidjson/prettywriter.h"
@@ -9,6 +10,9 @@
 #include <ctime>
 #include <set>
 #include <string>
+#include <sstream>
+
+#include "doctest_header.h"
 
 using namespace rapidjson;
 
@@ -257,7 +261,7 @@ int eval_log()
     return 0;
 }
 
-int eval_log_line_str(char* line)
+int eval_log_line_str(const char* line)
 {
     std::string action;
     std::string start_time;
@@ -268,8 +272,73 @@ int eval_log_line_str(char* line)
     std::time_t start_time_t;
     std::time_t end_time_t;
     csv_reader->read_row_string(
-        line, action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
+        (char *)line, action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
     eval_log_line(action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
 
     return 0;
+}
+
+TEST_CASE("eval_log")
+{
+    CSVReader csv_reader(LOG_BASE_DIR "/" LOGFILE_NAME);
+    eval_log_init(csv_reader.csv_reader);
+
+    std::string temp_str =
+R"(CREATE  , Tue Apr 23 01:41:17 2024, 00:00:00, test, test event, 1713807677, 1713807677
+GOAL    , Tue Apr 23 01:41:17 2024, 10:00:00, test, times: 10, 1713807677, 1713843677
+GOAL    , Tue Apr 23 01:41:17 2024, 10:00:00, test, times: 99999, 1713807677, 1713843677
+GOAL    , Tue Apr 23 01:41:17 2024, 10:00:00, test, duration: 9999999, 1713807677, 1713843677
+DO      , Tue Apr 23 01:41:17 2024, 10:00:00, test, test19, 1713807677, 1713843677
+)";
+    std::istringstream iss(temp_str);
+
+    for (std::string line; std::getline(iss, line); )
+    {
+        eval_log_line_str(line.c_str());
+    }
+
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    d.Accept(writer);
+
+    CHECK(std::string(buffer.GetString()) ==
+std::string(
+R"({
+    "events": {
+        "test": {
+            "create_date_time_t": 1713807677,
+            "description": "test event",
+            "duplicate": false,
+            "logs": [
+                {
+                    "start_time_t": 1713807677,
+                    "end_time_t": 1713843677,
+                    "duration_t": 36000,
+                    "log": "test19"
+                }
+            ],
+            "total_duration_t": 0,
+            "goals": [
+                {
+                    "start_time_t": 1713807677,
+                    "end_time_t": 1713843677,
+                    "times": 10,
+                    "progress": 1
+                },
+                {
+                    "start_time_t": 1713807677,
+                    "end_time_t": 1713843677,
+                    "times": 99999,
+                    "progress": 1
+                },
+                {
+                    "start_time_t": 1713807677,
+                    "end_time_t": 1713843677,
+                    "duration": 9999999,
+                    "progress": 36000
+                }
+            ]
+        }
+    }
+})"));
 }

@@ -6,6 +6,26 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # using Clang
+    if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+        # using clang with clang-cl front end
+        # suppress deprecated declarations warning
+        add_compile_options(-Wno-deprecated-declarations)
+    elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
+        # using clang with regular front end
+    else()
+        # suppress deprecated declarations warning
+        add_compile_options(-Wno-deprecated-declarations)
+    endif()
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  # using GCC
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+  # using Intel C++
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  # using Visual Studio C++
+endif()
+
 # set pthread for every target
 if (EMSCRIPTEN)
     # should compile and link everything with thread support
@@ -16,24 +36,23 @@ if (EMSCRIPTEN)
     set(HELLOIMGUI_EMSCRIPTEN_PTHREAD_ALLOW_MEMORY_GROWTH ON CACHE BOOL "" FORCE)
 endif()
 
-if(MSVC)
+if(WIN32)
     add_compile_options("/utf-8")
     set(HELLOIMGUI_WIN32_NO_CONSOLE OFF CACHE BOOL "Disable console window on Windows" FORCE)
-endif(MSVC)
+endif(WIN32)
 # Add imgui_bundle
 add_subdirectory(imgui_bundle)
 
 file(GLOB sources *.hpp *.cpp *.c *.h)
 file(GLOB font_sources fonts/*.hpp fonts/*.cpp)
 # set app name and set emscripten idbfs folder name in shell.html
-set(MY_APP_NAME Life-controller-app CACHE STRING "App name" FORCE)
-configure_file(app_config.hpp.in app_config.hpp @ONLY)
-imgui_bundle_add_app(${MY_APP_NAME} ${sources} ${font_sources} app_config.hpp)
+configure_file(../app_config.hpp.in app_config.hpp @ONLY)
+imgui_bundle_add_app(${MY_APP_NAME} ${sources} ${font_sources})
+target_include_directories(${MY_APP_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(${MY_APP_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(${MY_APP_NAME} PUBLIC Life-controller-core)
 target_link_libraries(${MY_APP_NAME} INTERFACE rapidjson)
 
-target_include_directories(${MY_APP_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 if (EMSCRIPTEN)
     target_link_options(${MY_APP_NAME} PRIVATE -Wno-pthreads-mem-growth)
@@ -70,7 +89,6 @@ add_subdirectory(abseil-cpp)
 target_link_libraries(${MY_APP_NAME} PRIVATE absl::strings)
 
 # add doctest for unit testing
-set(doctest_header_dir "${CMAKE_CURRENT_SOURCE_DIR}/doctest/doctest")
 target_include_directories(${MY_APP_NAME} PRIVATE ${doctest_header_dir})
 
 add_subdirectory(imlottie)
@@ -111,7 +129,7 @@ else()
 endif()
 
 # add playground for testing imgui features
-if (MSVC)
+if (WIN32)
     if(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/hello_imgui_demodocking)
         add_subdirectory(hello_imgui_demodocking)
     endif()
