@@ -41,6 +41,8 @@
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 
+#include "ImCoolBar/ImCoolbar.h"
+
 #include "absl/strings/escaping.h"
 
 #ifdef HELLOIMGUI_HAS_OPENGL3
@@ -413,6 +415,54 @@ void AlignForWidth(float width, float alignment = 0.5f)
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
 }
 
+void DemoCoolBar()
+{
+    auto ShowCoolBarButton = [](const std::string& anim) -> bool
+    {
+#ifdef EMSCRIPTEN
+        static std::string imlottie_base_dir = HelloImGui::AssetFileFullPath("imlottie_test/");
+#else
+        static std::string imlottie_base_dir = "imlottie_test/";
+#endif
+        auto _ = [] (const std::string& anim) { return imlottie_base_dir + anim + ".json"; };
+        float w = ImGui::GetCoolBarItemWidth();
+
+        // Display transparent image and check if clicked
+        ImLottie::LottieAnimation(_(anim).c_str(), ImVec2(64, 64), ImVec2(w, w), true, 0);
+        // HelloImGui::ImageFromAsset("images/world.png", ImVec2(w, w));
+        bool clicked = ImGui::IsItemHovered() && ImGui::IsMouseClicked(0);
+
+        // // Optional: add a label on the image
+        // {
+        //     ImVec2 topLeftCorner = ImGui::GetItemRectMin();
+        //     ImVec2 textPos(topLeftCorner.x + ImmApp::EmSize(1.f), topLeftCorner.y + ImmApp::EmSize(1.f));
+        //     ImGui::GetForegroundDrawList()->AddText(textPos, 0xFFFFFFFF, anim.c_str());
+        // }
+
+        return clicked;
+    };
+
+
+    std::vector<std::string> buttonLabels {"speaker", "cubes", "emojilove", "car", "seeu", "freeside"};
+
+    ImGui::ImCoolBarConfig coolBarConfig;
+    coolBarConfig.anchor = ImVec2(0.5f, 0.07f); // position in the window (ratio of window size)
+    if (ImGui::BeginCoolBar("##CoolBarMain", ImCoolBarFlags_Horizontal, coolBarConfig))
+    {
+        for (const std::string& label: buttonLabels)
+        {
+            if (ImGui::CoolBarItem())
+            {
+                if (ShowCoolBarButton(label))
+                    printf("Clicked %s\n", label.c_str());
+            }
+        }
+        ImGui::EndCoolBar();
+    }
+
+    ImGui::NewLine(); ImGui::NewLine();
+}
+
 enum SCREEN_STATE
 {
     Time_S,
@@ -431,15 +481,7 @@ void guiFunction(AppState& appState)
         HelloImGui::GetRunnerParams()->appShallExit = true;
     }
 #endif
-#ifdef HELLOIMGUI_HAS_IMLOTTIE
 
-#ifdef EMSCRIPTEN
-    ImLottie::demoAnimations(HelloImGui::AssetFileFullPath("imlottie_test/"));
-#else
-    ImLottie::demoAnimations("imlottie_test/");
-#endif
-
-#endif
     static bool first_time = true;
     static enum SCREEN_STATE current_screen = Time_S;
 
@@ -470,6 +512,8 @@ void guiFunction(AppState& appState)
             static bool first_time = true;
 
             first_time = false;
+
+            DemoCoolBar();
 
             ImVec2 dragSize(ImGui::GetMainViewport()->Size.x, ImGui::GetFontSize() * 1.5f);
             ImRect dragArea(ImGui::GetMainViewport()->Pos, ImGui::GetMainViewport()->Pos + dragSize);
@@ -896,7 +940,6 @@ int main(int argc, char** argv)
     CSVReader csv_reader(LOG_BASE_DIR "/" LOGFILE_NAME);
     eval_log_init(csv_reader.csv_reader);
     eval_log();
-    get_all_event_log();
 
     HelloImGui::RunnerParams runnerParams;
     runnerParams.appWindowParams.windowTitle = "Life-controller";
@@ -937,12 +980,14 @@ int main(int argc, char** argv)
         ImLottie::init();
 #endif
     };
+
     runnerParams.callbacks.BeforeImGuiRender = [&appState]()
     {
 #ifdef HELLOIMGUI_HAS_IMLOTTIE
         ImLottie::sync();
 #endif
     };
+
     runnerParams.callbacks.BeforeExit = [&appState] { SaveMyAppSettings(appState); };
     runnerParams.callbacks.AfterSwap = AppPoll;
 
@@ -969,7 +1014,9 @@ int main(int argc, char** argv)
         ImGui::GetStyle().ItemSpacing = ImVec2(6.f, 4.f);
     };
 
-    runnerParams.callbacks.ShowGui = [&] { guiFunction(appState); };
+    runnerParams.callbacks.ShowGui = [&] {
+        guiFunction(appState);
+    };
 
 #if EMSCRIPTEN
     runnerParams.iniFolderType = HelloImGui::IniFolderType::CustomFolder;

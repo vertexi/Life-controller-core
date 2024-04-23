@@ -159,6 +159,11 @@ Document d;
 
 CSVREADER_CLASS* csv_reader = nullptr;
 
+Document& get_log_document()
+{
+    return d;
+}
+
 int eval_log_init(CSVREADER_CLASS& csv_reader_)
 {
     csv_reader = &csv_reader_;
@@ -280,8 +285,8 @@ int eval_log_line_str(const char* line)
 
 TEST_CASE("eval_log")
 {
-    CSVReader csv_reader(LOG_BASE_DIR "/" LOGFILE_NAME);
-    eval_log_init(csv_reader.csv_reader);
+    CSVReader csv_reader_;
+    eval_log_init(csv_reader_.csv_reader);
 
     std::string temp_str =
 R"(CREATE  , Tue Apr 23 01:41:17 2024, 00:00:00, test, test event, 1713807677, 1713807677

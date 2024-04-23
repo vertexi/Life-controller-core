@@ -3,4 +3,5 @@ build_emscripten/
 .cache/
 app/hello_imgui_demodocking/
 app/hello_imgui_demo_classic/
+app/demo
 *.ttf
