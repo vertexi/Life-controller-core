@@ -14,12 +14,12 @@
 #include <ctime>
 #include <string>
 
-
 #include "config.hpp"
 #include <action.hpp>
+#include <analysis.hpp>
 #include <common.hpp>
 #include <log_eval.hpp>
-#include <analysis.hpp>
+
 
 #ifndef __EMSCRIPTEN__
 #include "systray.h"
@@ -415,7 +415,17 @@ void AlignForWidth(float width, float alignment = 0.5f)
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
 }
 
-void DemoCoolBar()
+enum SCREEN_STATE
+{
+    Time_S,
+    Timer_S,
+    Setting_S,
+    Timer_End_S,
+    Event_List_S,
+    Event_Edit_S
+};
+
+void DemoCoolBar(enum SCREEN_STATE &current_screen)
 {
     auto ShowCoolBarButton = [](const std::string& anim) -> bool
     {
@@ -424,7 +434,7 @@ void DemoCoolBar()
 #else
         static std::string imlottie_base_dir = "imlottie_test/";
 #endif
-        auto _ = [] (const std::string& anim) { return imlottie_base_dir + anim + ".json"; };
+        auto _ = [](const std::string& anim) { return imlottie_base_dir + anim + ".json"; };
         float w = ImGui::GetCoolBarItemWidth();
 
         // Display transparent image and check if clicked
@@ -442,36 +452,40 @@ void DemoCoolBar()
         return clicked;
     };
 
-
-    std::vector<std::string> buttonLabels {"speaker", "cubes", "emojilove", "car", "seeu", "freeside"};
+    std::vector<std::string> buttonLabels{"speaker", "cubes", "emojilove", "car", "seeu", "freeside"};
 
     ImGui::ImCoolBarConfig coolBarConfig;
-    coolBarConfig.anchor = ImVec2(0.5f, 0.07f); // position in the window (ratio of window size)
+    coolBarConfig.anchor = ImVec2(0.5f, 0.07f);  // position in the window (ratio of window size)
+    coolBarConfig.normal_size = 10.0f;
+    coolBarConfig.hovered_size = 60.0f;
+    coolBarConfig.anim_step = 0.05f;
+    coolBarConfig.effect_strength = 0.8f;
     if (ImGui::BeginCoolBar("##CoolBarMain", ImCoolBarFlags_Horizontal, coolBarConfig))
     {
-        for (const std::string& label: buttonLabels)
+        for (const std::string& label : buttonLabels)
         {
             if (ImGui::CoolBarItem())
             {
                 if (ShowCoolBarButton(label))
-                    printf("Clicked %s\n", label.c_str());
+                {
+                    if (label == "speaker")
+                    {
+                        current_screen = Event_List_S;
+                    } else if (label == "cubes") {
+                        current_screen = Setting_S;
+                    } else {
+                        current_screen = Time_S;
+                    }
+                }
             }
         }
         ImGui::EndCoolBar();
     }
 
-    ImGui::NewLine(); ImGui::NewLine();
+    ImGui::NewLine();
+    ImGui::NewLine();
 }
 
-enum SCREEN_STATE
-{
-    Time_S,
-    Timer_S,
-    Setting_S,
-    Timer_End_S,
-    Event_List_S,
-    Event_Edit_S
-};
 #define TIME_STR_LEN 20
 void guiFunction(AppState& appState)
 {
@@ -513,26 +527,27 @@ void guiFunction(AppState& appState)
 
             first_time = false;
 
-            DemoCoolBar();
+            DemoCoolBar(current_screen);
 
-            ImVec2 dragSize(ImGui::GetMainViewport()->Size.x, ImGui::GetFontSize() * 1.5f);
-            ImRect dragArea(ImGui::GetMainViewport()->Pos, ImGui::GetMainViewport()->Pos + dragSize);
-            ImVec2 mousePos = ImGui::GetMousePos();
+            // ImVec2 dragSize(ImGui::GetMainViewport()->Size.x, ImGui::GetFontSize() * 1.5f);
+            // ImRect dragArea(ImGui::GetMainViewport()->Pos, ImGui::GetMainViewport()->Pos + dragSize);
+            // ImVec2 mousePos = ImGui::GetMousePos();
 
-            if (ImGui::BeginPopupContextItem("ContextMenu"))
-            {
-                ImGui::PushFont(appState.TitleFont);
-                if (ImGui::Selectable("Settings"))
-                {
-                    current_screen = Setting_S;
-                }
-                ImGui::PopFont();
-                ImGui::EndPopup();
-            }
-            if (dragArea.Contains(mousePos) && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
-            {
-                ImGui::OpenPopup("ContextMenu");
-            }
+            // if (ImGui::BeginPopupContextItem("ContextMenu"))
+            // {
+            //     ImGui::PushFont(appState.TitleFont);
+            //     if (ImGui::Selectable("Settings"))
+            //     {
+            //         current_screen = Setting_S;
+            //     }
+            //     ImGui::PopFont();
+            //     ImGui::EndPopup();
+            // }
+            // if (dragArea.Contains(mousePos) && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+            // {
+            //     ImGui::OpenPopup("ContextMenu");
+            // }
+
             float avail = ImGui::GetContentRegionAvail().y;
             ImGui::SetCursorPosY(avail * 0.3f + style.FramePadding.y);
             ImGui::PushFont(appState.TimeFont);
@@ -547,10 +562,6 @@ void guiFunction(AppState& appState)
                 appState.myAppSettings.start_time = current;
                 printf("Counting started!\n");
                 printf("Start time: %s", std::ctime(&current));
-            }
-            if (ButtonCenteredOnLine("Stat"))
-            {
-                current_screen = Event_List_S;
             }
             ImGui::PopFont();
         }
@@ -841,7 +852,11 @@ void guiFunction(AppState& appState)
         }
         break;
         case Event_List_S:
-            break;
+        {
+            static bool first_time = true;
+            DemoCoolBar(current_screen);
+        }
+        break;
         case Event_Edit_S:
         {
             // TODO: implement event edit screen
@@ -1014,7 +1029,8 @@ int main(int argc, char** argv)
         ImGui::GetStyle().ItemSpacing = ImVec2(6.f, 4.f);
     };
 
-    runnerParams.callbacks.ShowGui = [&] {
+    runnerParams.callbacks.ShowGui = [&]
+    {
         guiFunction(appState);
     };
 
