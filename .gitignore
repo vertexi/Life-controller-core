@@ -1,6 +1,7 @@
 build/
 build_emscripten/
 .cache/
+.vs/
 app/hello_imgui_demodocking/
 app/hello_imgui_demo_classic/
 app/demo

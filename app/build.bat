@@ -6,3 +6,5 @@ cd .\build_emscripten\app\ llvm-dwp -e .\Life-controller-app.wasm -o .\Life-cont
 
 @REM Font builder
 @REM .\hb-subset.exe --unicodes=0x20-0xFF --text-file=GB2312.txt --output-file trim1.ttf --font-file=.\LXGWWenKaiMonoLite-Light.ttf
+
+python -m nuitka --standalone test.py
