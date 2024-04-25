@@ -4,6 +4,9 @@
     "dependencies": [
       "asio",
       "freetype",
-      "cppzmq"
+      {
+        "name": "cppzmq",
+        "features": ["websockets"]
+      }
     ]
 }

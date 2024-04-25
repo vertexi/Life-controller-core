@@ -28,14 +28,9 @@ async def get_media_info():
         info_dict['genres'] = list(info_dict['genres'])
         info_dict['app_id'] = current_session.source_app_user_model_id
 
-        return info_dict
+        return f"media: {info_dict['album_artist']}, title: {info_dict['title']}, app_id: {info_dict['app_id']}"
 
-    # It could be possible to select a program from a list of current
-    # available ones. I just haven't implemented this here for my use case.
-    # See references for more information.
-    raise Exception('TARGET_PROGRAM is not the current media session')
+    return f"media: , title: , app_id: "
 
-
-if __name__ == '__main__':
-    current_media_info = asyncio.run(get_media_info())
-    print(f"media: {current_media_info['album_artist']}, {current_media_info['title']}, {current_media_info['app_id']}")
+def getCurrentMedia():
+    return asyncio.run(get_media_info())

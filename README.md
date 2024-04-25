@@ -20,3 +20,7 @@ Support Platforms:
 - Linux
 - Mac
 - Webassembly
+
+TODO:
+
+- [ ] zeromq with jszmq over websocket, have a look at imgui-ws which implement the imgui headless over websocket

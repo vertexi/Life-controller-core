@@ -20,7 +20,7 @@ int main (int argc, char *argv[])
     //  Socket to talk to server
     std::cout << "Collecting updates from python server...\n" << std::endl;
     zmq::socket_t subscriber (context, zmq::socket_type::sub);
-    subscriber.connect("tcp://localhost:8848");
+    subscriber.connect("ws://localhost:8848");
 
     //  Subscribe to zipcode, default is NYC, 10001
 	const char *filter = (argc > 1)? argv [1]: "10001 ";

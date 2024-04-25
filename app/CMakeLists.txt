@@ -12,6 +12,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         # using clang with clang-cl front end
         # suppress deprecated declarations warning
         add_compile_options(-Wno-deprecated-declarations)
+        add_compile_options(/MTd)
     elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
         # using clang with regular front end
     else()
@@ -143,5 +144,8 @@ if (WIN32)
     endif()
     if(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/demo)
         add_subdirectory(demo)
+    endif()
+    if(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/utils)
+    add_subdirectory(utils)
     endif()
 endif()
