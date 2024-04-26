@@ -1,0 +1,17 @@
+add_library(LXGWWenKaiFont STATIC ${CMAKE_CURRENT_BINARY_DIR}/LXGWWenKaiMonoLite.cpp)
+target_include_directories(LXGWWenKaiFont PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+
+add_custom_target(
+        build_font ALL
+        DEPENDS
+            ${CMAKE_CURRENT_BINARY_DIR}/LXGWWenKaiMonoLite.cpp
+            ${CMAKE_CURRENT_BINARY_DIR}/LXGWWenKaiMonoLite.hpp
+)
+
+add_custom_command(
+        OUTPUT
+            ${CMAKE_CURRENT_BINARY_DIR}/LXGWWenKaiMonoLite.cpp
+            ${CMAKE_CURRENT_BINARY_DIR}/LXGWWenKaiMonoLite.hpp
+        DEPENDS ${CMAKE_CURRENT_LIST_DIR}/fontbuilder.py
+        COMMAND python ${CMAKE_CURRENT_LIST_DIR}/fontbuilder.py ${CMAKE_CURRENT_BINARY_DIR}
+)

@@ -5,8 +5,9 @@
       "asio",
       "freetype",
       {
-        "name": "cppzmq",
+        "name": "zeromq",
         "features": ["websockets"]
-      }
+      },
+      "cppzmq"
     ]
 }

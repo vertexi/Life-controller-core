@@ -17,3 +17,6 @@
 [submodule "app/fonts/character_set"]
 	path = app/fonts/character_set
 	url = https://github.com/vertexi/character_set
+[submodule "app/clip"]
+	path = app/clip
+	url = https://github.com/dacap/clip.git

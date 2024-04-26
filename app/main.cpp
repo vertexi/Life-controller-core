@@ -53,7 +53,7 @@
 #include "imlottie.h"
 #endif
 
-#include "fonts/LXGWWenKaiMonoLite.hpp"
+#include "LXGWWenKaiMonoLite.hpp"
 
 struct MyAppSettings
 {

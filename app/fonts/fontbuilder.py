@@ -5,6 +5,10 @@ import re
 
 build_ttf = False
 
+output_dir = sys.argv[1]
+
+print("font output dir:", output_dir)
+
 # get current directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(current_dir)
@@ -59,7 +63,7 @@ for ttf_file in ttf_files:
         cwd=current_dir,
         capture_output=True)
     compress_process.stdout.decode('utf-8')
-    with open(f"{font_family_name}.cpp", "a", encoding="utf-8") as f:
+    with open(f"{output_dir}/{font_family_name}.cpp", "a", encoding="utf-8") as f:
         f.write(compress_process.stdout.decode('utf-8'))
 
 cpp_impl_dict = {}
@@ -80,8 +84,8 @@ typedef const unsigned int* fontMemory;
 f"""
 #include "{font_family_name}.hpp"
 """, \
-            "header_file_name": f"{font_family_name}.hpp", \
-            "impl_file_name": f"{font_family_name}.cpp"
+            "header_file_name": f"{output_dir}/{font_family_name}.hpp", \
+            "impl_file_name": f"{output_dir}/{font_family_name}.cpp"
         }
     cpp_impl_dict[font_family_name]["header"] += \
 f"""
@@ -99,10 +103,10 @@ int get_{font_var_name}_size() {{
 }}
 """
 
-for cpp_impl in cpp_impl_dict:
-    with open(cpp_impl_dict[cpp_impl]["header_file_name"], "a", encoding="utf-8") as f:
-        f.write(cpp_impl_dict[cpp_impl]["header"])
-    with open(cpp_impl_dict[cpp_impl]["impl_file_name"], "a", encoding="utf-8") as f:
-        f.write(cpp_impl_dict[cpp_impl]["impl"])
+for font_variant in cpp_impl_dict:
+    with open(cpp_impl_dict[font_variant]["header_file_name"], "a", encoding="utf-8") as f:
+        f.write(cpp_impl_dict[font_variant]["header"])
+    with open(cpp_impl_dict[font_variant]["impl_file_name"], "a", encoding="utf-8") as f:
+        f.write(cpp_impl_dict[font_variant]["impl"])
 
 os.remove("temp.font")

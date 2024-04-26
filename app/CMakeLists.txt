@@ -12,7 +12,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         # using clang with clang-cl front end
         # suppress deprecated declarations warning
         add_compile_options(-Wno-deprecated-declarations)
-        add_compile_options(/MTd)
+        # string(REGEX REPLACE "-MDd" "/MTd" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        add_link_options(-MTd)
     elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
         # using clang with regular front end
     else()
@@ -46,11 +47,26 @@ if(WIN32)
     set(GLFW_INSTALL ON)
     add_subdirectory(imgui_bundle/external/glfw/glfw)
 endif(WIN32)
+
 # Add imgui_bundle
 add_subdirectory(imgui_bundle)
 
+# Disable clip examples and tests
+set(CLIP_EXAMPLES OFF CACHE BOOL "Compile clip examples")
+set(CLIP_TESTS OFF CACHE BOOL "Compile clip tests")
+set(CLIP_LIB_HEADER_FOLDER ${CMAKE_CURRENT_LIST_DIR}/clip CACHE STRING "Folder where to find clip library headers")
+
+# In case that you have ${PNG_LIBRARY} set to support copy/paste images on Linux
+#set(CLIP_X11_PNG_LIBRARY "${PNG_LIBRARY}")
+
+# Add clip subdirectory to compile the library
+add_subdirectory(clip)
+
+# build LXGWWenKaiFont font
+add_subdirectory(fonts)
+
 file(GLOB sources *.hpp *.cpp *.c *.h)
-file(GLOB font_sources fonts/*.hpp fonts/*.cpp)
+file(GLOB font_sources)
 # set app name and set emscripten idbfs folder name in shell.html
 configure_file(../app_config.hpp.in app_config.hpp @ONLY)
 imgui_bundle_add_app(${MY_APP_NAME} ${sources} ${font_sources})
@@ -58,6 +74,7 @@ target_include_directories(${MY_APP_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(${MY_APP_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(${MY_APP_NAME} PUBLIC Life-controller-core)
 target_link_libraries(${MY_APP_NAME} INTERFACE rapidjson)
+target_link_libraries(${MY_APP_NAME} PRIVATE LXGWWenKaiFont)
 
 
 if (EMSCRIPTEN)
@@ -149,3 +166,5 @@ if (WIN32)
     add_subdirectory(utils)
     endif()
 endif()
+
+add_subdirectory(texocr)
