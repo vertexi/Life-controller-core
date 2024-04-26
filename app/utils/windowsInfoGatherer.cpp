@@ -22,14 +22,11 @@ int main (int argc, char *argv[])
     zmq::socket_t subscriber (context, zmq::socket_type::sub);
     subscriber.connect("ws://localhost:8848");
 
-    //  Subscribe to zipcode, default is NYC, 10001
-	const char *filter = (argc > 1)? argv [1]: "10001 ";
-    subscriber.set(zmq::sockopt::subscribe, "");
-
-    //  Process 100 updates
-    int update_nbr;
-    long total_temp = 0;
-    for (update_nbr = 0; update_nbr < 100; update_nbr++) {
+    while (true)
+    {
+        //  Subscribe to zipcode, default is NYC, 10001
+        const char *filter = (argc > 1)? argv [1]: "10001 ";
+        subscriber.set(zmq::sockopt::subscribe, "");
 
         zmq::message_t update;
 
@@ -39,5 +36,6 @@ int main (int argc, char *argv[])
         activeWindowTitle = update.to_string();
         std::cout << activeWindowTitle << std::endl;
     }
+
     return 0;
 }

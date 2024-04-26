@@ -4,6 +4,7 @@ from getCurrentMedia import getCurrentMedia
 import time
 import argparse
 import zmq
+import asyncio
 
 context = zmq.Context()
 socket = context.socket(zmq.PUB)
@@ -26,6 +27,9 @@ class Range(object):
     def __str__(self):
         return '[{0},{1}]'.format(self.start, self.end)
 
+async def getWindowsInfo():
+    return await asyncio.gather(getActiveWindowTitle(), getCurrentMedia())
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         prog='PROG',
@@ -35,8 +39,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     while True:
-        info = f"#WINDOW: {getActiveWindowTitle()}\n#MEDIA: {getCurrentMedia()}"
+        info = ''
+        window_info, media_info = asyncio.run(getWindowsInfo())
+        if window_info:
+            info += f"#WINDOW: {window_info}\n"
+        if media_info:
+            info += f"#MEDIA: {media_info}\n"
         if args.verbose:
-            print(info)
+            print(info, end='')
         socket.send_string(info)
         time.sleep(args.timeperiod)
