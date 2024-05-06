@@ -1,10 +1,18 @@
 #include "hello_imgui/hello_imgui.h"
 #include "clip.h"
 #include "hello_imgui/hello_imgui_font.h"
+#include "hello_imgui/image_from_asset.h"
+#include "hello_imgui/internal/image_abstract.h"
 #include "imgui.h"
 #include <iostream>
-
+#include "stb_image_write.h"
 #include "LXGWWenKaiMonoLite.hpp"
+
+#ifdef HELLOIMGUI_HAS_OPENGL
+#include "hello_imgui/hello_imgui_include_opengl.h"
+#endif
+
+#include <zmq.hpp>
 
 // Demonstrate how to load additional fonts (fonts - part 1/3)
 ImFont * gCustomFont = nullptr;
@@ -25,6 +33,18 @@ void MyLoadFonts()
 }
 
 
+#include <zmq.hpp>
+#include <string>
+#include <iostream>
+
+void png_copy(void *socket_, void *data, int size) {
+    zmq::message_t request (size);
+    memcpy(request.data(), data, size);
+    std::cout << "Sending Image " << std::endl;
+    zmq::socket_t *socket = (zmq::socket_t *)socket_;
+    socket->send (request, zmq::send_flags::none);
+}
+
 int main(int , char *[]) {
     HelloImGui::RunnerParams params;
     params.appWindowParams.windowGeometry.size = {1280, 720};
@@ -38,8 +58,22 @@ int main(int , char *[]) {
     bool show_demo_window = true;
     bool show_another_window = false;
 
-    params.callbacks.ShowGui = [&]() {
+    //  Prepare our context and socket
+    zmq::context_t context (1);
+    zmq::socket_t socket (context, zmq::socket_type::req);
 
+    std::cout << "Connecting to hello world server..." << std::endl;
+    socket.connect ("tcp://localhost:8848");
+
+    zmq_pollitem_t items[] = {
+        {socket,  0,  ZMQ_POLLIN,     0},
+    };
+
+    params.callbacks.AfterSwap = [&]() {
+        zmq_poll(items, IM_ARRAYSIZE(items), 0);
+    };
+
+    params.callbacks.ShowGui = [&]() {
         {
             ImGui::Begin("clip test");
             ImGui::Text("Hello, world!");
@@ -47,14 +81,53 @@ int main(int , char *[]) {
             ImGui::PushFont(chineseFont);
             ImGui::Text((char *)u8"你好，世界！");
             static std::string value;
+            static clip::image image;
+            static bool update_image = false;
+            static bool wait_reply = false;
             if (ImGui::Button("Show clipboard"))
             {
                 if (!clip::get_text(value))
                 {
                     value = "Could not get clipboard text";
+                    if (!clip::get_image(image)) {
+                        value = "Could not get clipboard image";
+                    } else {
+                        update_image = true;
+                        wait_reply = true;
+                        auto imageDataSize = image.spec().required_data_size();
+                        auto imageData = image.data();
+                        IM_ASSERT(image.spec().bits_per_pixel / 8 == 4);
+                        for (int i = 0; i < imageDataSize / 4; i++)
+                        {
+                            std::swap(imageData[i * 4 + 0], imageData[i * 4 + 2]);
+                        }
+                        stbi_write_png_to_func(png_copy, &socket, image.spec().width, image.spec().height, 4, (void *)imageData, image.spec().bytes_per_row);
+                    }
                 }
             }
             ImGui::Text("%s", value.c_str());
+            static HelloImGui::ImageAbstractPtr concreteImage;
+            static ImVec2 imageDispSize;
+            if (update_image) {
+#ifdef HELLOIMGUI_HAS_OPENGL
+                std::tie(concreteImage, imageDispSize) = HelloImGui::ImageFromData((unsigned char *)image.data(), {(float)image.spec().width, (float)image.spec().height});
+#endif
+                update_image = false;
+            }
+            if (wait_reply && items[0].revents & ZMQ_POLLIN) {
+                zmq::message_t reply;
+                auto size = socket.recv (reply, zmq::recv_flags::none);
+                if(size != -1)
+                {
+                    std::cout << "receive ok." << std::endl;
+                    std::cout << reply.to_string() << std::endl;
+                }
+                wait_reply = false;
+            }
+            if (imageDispSize.x != 0)
+            {
+                ImGui::Image(concreteImage->TextureID(), imageDispSize);
+            }
             if (ImGui::Button("Set clipboard"))
             {
                 clip::set_text("Hello clipboard!");
@@ -66,49 +139,6 @@ int main(int , char *[]) {
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
-
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-        {
-            static float f = 0.0f;
-            static int counter = 0;
-
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-            // Demo custom font usage (fonts - part 3/3)
-            ImGui::PushFont(gCustomFont);
-            ImGui::Text("Custom font");
-            ImGui::PopFont();
-
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&params.imGuiWindowParams.backgroundColor); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
-            #ifndef HELLOIMGUI_MOBILEDEVICE
-            if (ImGui::Button("Quit"))
-                params.appShallExit = true;
-            #endif
-            ImGui::End();
-        }
-
-        // 3. Show another simple window.
-        if (show_another_window)
-        {
-            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
-            ImGui::End();
-        }
     };
 
     params.imGuiWindowParams.showMenuBar = true;

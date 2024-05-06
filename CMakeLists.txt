@@ -1,11 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 
-# set vcpkg use static libs
-if(CMAKE_TOOLCHAIN_FILE)
-    if("${CMAKE_TOOLCHAIN_FILE}" MATCHES "vcpkg.cmake")
-        set(VCPKG_TARGET_TRIPLET x64-windows-static)
-    endif()
-endif()
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "Choose MSVC runtime library")
 
 project(Life-controller-core VERSION 0.0)
 

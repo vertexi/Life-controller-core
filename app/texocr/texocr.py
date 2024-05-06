@@ -2,17 +2,17 @@ import zmq
 from rapid_latex_ocr import LatexOCR
 
 context = zmq.Context()
-socket = context.socket(zmq.PUB)
-socket.bind("ws://*:8848")
+socket = context.socket(zmq.REP)
+socket.bind("tcp://*:8848")
 
 model = LatexOCR()
 
-img_path = "./test.png"
-with open(img_path, "rb") as f:
-    data = f.read()
-
-    res, elapse = model(data)
+while True:
+    print("waiting...")
+    #  Wait for next request from client
+    image = socket.recv()
+    print("Received request!")
+    res, elapse = model(image)
     socket.send_string(res)
-    socket.send_string(elapse)
     print(res)
     print(elapse)

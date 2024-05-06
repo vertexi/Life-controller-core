@@ -6,3 +6,7 @@ target_link_libraries(texocr PRIVATE clip)
 target_include_directories(texocr PRIVATE ${CLIP_LIB_HEADER_FOLDER})
 
 target_link_libraries(texocr PRIVATE LXGWWenKaiFont)
+
+find_package(cppzmq CONFIG REQUIRED)
+target_link_libraries(texocr PRIVATE cppzmq)
+target_link_libraries(texocr PRIVATE stb_hello_imgui)

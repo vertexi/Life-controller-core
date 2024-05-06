@@ -12,8 +12,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         # using clang with clang-cl front end
         # suppress deprecated declarations warning
         add_compile_options(-Wno-deprecated-declarations)
-        # string(REGEX REPLACE "-MDd" "/MTd" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-        add_link_options(-MTd)
     elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
         # using clang with regular front end
     else()
