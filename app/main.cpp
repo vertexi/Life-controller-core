@@ -859,11 +859,13 @@ void guiFunction(AppState& appState)
         {
             static bool first_time = true;
             static std::vector<event_do_log> events = {};
-            if (first_time) {
+            if (first_time)
+            {
                 events = std::move(get_all_events());
                 first_time = false;
             }
-            enum class event_context_menu {
+            enum class event_context_menu
+            {
                 VIEW,
                 EDIT,
                 DELETE_,
@@ -873,7 +875,8 @@ void guiFunction(AppState& appState)
             static int event_view_row = -1;
             static event_context_menu event_context_menu = event_context_menu::NONE;
             DemoCoolBar(current_screen);
-            if (current_screen != Event_List_S) {
+            if (current_screen != Event_List_S)
+            {
                 first_time = true;
                 selected = -1;
                 event_view_row = -1;
@@ -882,17 +885,18 @@ void guiFunction(AppState& appState)
 
             if (event_context_menu != event_context_menu::NONE)
             {
-                switch (event_context_menu) {
+                switch (event_context_menu)
+                {
                     case (event_context_menu::VIEW):
-                        {
-                            ImGui::Text("%s", events[event_view_row].event_name);
+                    {
+                        ImGui::Text("%s", events[event_view_row].event_name);
 
-                            if (ButtonCenteredOnLine("Back"))
-                            {
-                                event_context_menu = event_context_menu::NONE;
-                            }
+                        if (ButtonCenteredOnLine("Back"))
+                        {
+                            event_context_menu = event_context_menu::NONE;
                         }
-                        break;
+                    }
+                    break;
                     case event_context_menu::EDIT:
                         // do something
                         break;
@@ -902,17 +906,18 @@ void guiFunction(AppState& appState)
                     default:
                         break;
                 }
-            } else
+            }
+            else
             {
                 static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable |
-                                            ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter |
-                                            ImGuiTableFlags_BordersV | ImGuiTableFlags_RowBg;
+                                               ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter |
+                                               ImGuiTableFlags_BordersV | ImGuiTableFlags_RowBg;
                 static const char* headers[] = {"Event", "start time", "duration", "description"};
                 if (ImGui::BeginTable("table1", IM_ARRAYSIZE(headers), flags))
                 {
-                    // Submit columns name with TableSetupColumn() and call TableHeadersRow() to create a row with
-                    // a header in each column. (Later we will show how TableSetupColumn() has other uses,
-                    // optional flags, sizing weight etc.)
+                    // Submit columns name with TableSetupColumn() and call TableHeadersRow() to create a row
+                    // with a header in each column. (Later we will show how TableSetupColumn() has other
+                    // uses, optional flags, sizing weight etc.)
                     for (int column = 0; column < IM_ARRAYSIZE(headers); column++)
                     {
                         ImGui::TableSetupColumn(headers[column]);
@@ -923,20 +928,23 @@ void guiFunction(AppState& appState)
                         ImGui::TableNextRow();
                         int column = 0;
                         ImGui::TableSetColumnIndex(column++);
-                        ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap;
+                        ImGuiSelectableFlags selectable_flags =
+                            ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap;
                         char name[256];
                         snprintf(name, IM_ARRAYSIZE(name), "%s##%d", events[row].event_name, row);
-                        if (ImGui::Selectable(name, selected==row, selectable_flags, ImVec2(0,0))) {
+                        if (ImGui::Selectable(name, selected == row, selectable_flags, ImVec2(0, 0)))
+                        {
                             selected = row;
                         }
-                        if (ImGui::BeginPopupContextItem()) // <-- use last item id as popup id
+                        if (ImGui::BeginPopupContextItem())  // <-- use last item id as popup id
                         {
-                            if (ImGui::Button("View")) {
+                            if (ImGui::Button("View"))
+                            {
                                 event_context_menu = event_context_menu::VIEW;
                                 event_view_row = row;
                             }
-                            if (ImGui::Button("Delete")) {
-
+                            if (ImGui::Button("Delete"))
+                            {
                             }
                             if (ImGui::Button("Close"))
                                 ImGui::CloseCurrentPopup();
@@ -1100,7 +1108,8 @@ int main(int argc, char** argv)
 #endif
     };
 
-    runnerParams.callbacks.BeforeExit = [&appState] {
+    runnerParams.callbacks.BeforeExit = [&appState]
+    {
         SaveMyAppSettings(appState);
         ImLottie::destroy();
     };
@@ -1129,7 +1138,7 @@ int main(int argc, char** argv)
         ImGui::GetStyle().ItemSpacing = ImVec2(6.f, 4.f);
         // tune theme
         ImVec4* colors = ImGui::GetStyle().Colors;
-        colors[ImGuiCol_Header]                 = ImVec4(0.27f, 0.38f, 0.61f, 1.00f);
+        colors[ImGuiCol_Header] = ImVec4(0.27f, 0.38f, 0.61f, 1.00f);
     };
 
     runnerParams.callbacks.ShowGui = [&] { guiFunction(appState); };

@@ -1,5 +1,6 @@
-#include "common.hpp"
+#include "log_eval.hpp"
 #include "app_config.hpp"
+#include "common.hpp"
 #include "include/fast-cpp-csv-parser/csv.h"
 #include "include/rapidjson/document.h"
 #include "include/rapidjson/prettywriter.h"
@@ -7,7 +8,7 @@
 #include "include/rapidjson/writer.h"
 #include <ctime>
 #include <sstream>
-#include "log_eval.hpp"
+
 
 #include "doctest_header.h"
 
@@ -156,10 +157,7 @@ Document d;
 
 CSVREADER_CLASS* csv_reader = nullptr;
 
-Document& get_log_document()
-{
-    return d;
-}
+Document& get_log_document() { return d; }
 
 int eval_log_init(CSVREADER_CLASS& csv_reader_)
 {
@@ -197,8 +195,8 @@ std::vector<event_do_log> get_all_events()
             auto& log = *itr;
             event_do_log event_do_log_;
             event_do_log_.data_ptr = itr;
-            event_do_log_.event_name = (char *)event_name;
-            event_do_log_.event_data = (char *)log["log"].GetString();
+            event_do_log_.event_name = (char*)event_name;
+            event_do_log_.event_data = (char*)log["log"].GetString();
             event_do_log_.start_time_t = log["start_time_t"].GetInt64();
             event_do_log_.end_time_t = log["end_time_t"].GetInt64();
             event_do_log_.duration_t = log["duration_t"].GetInt64();
@@ -306,7 +304,7 @@ int eval_log_line_str(const char* line)
     std::time_t start_time_t;
     std::time_t end_time_t;
     csv_reader->read_row_string(
-        (char *)line, action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
+        (char*)line, action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
     eval_log_line(action, start_time, duration, event_name, event_data, start_time_t, end_time_t);
 
     return 0;
@@ -318,7 +316,7 @@ TEST_CASE("eval_log")
     eval_log_init(csv_reader_.csv_reader);
 
     std::string temp_str =
-R"(CREATE  , Tue Apr 23 01:41:17 2024, 00:00:00, test, test event, 1713807677, 1713807677
+        R"(CREATE  , Tue Apr 23 01:41:17 2024, 00:00:00, test, test event, 1713807677, 1713807677
 GOAL    , Tue Apr 23 01:41:17 2024, 10:00:00, test, times: 10, 1713807677, 1713843677
 GOAL    , Tue Apr 23 01:41:17 2024, 10:00:00, test, times: 99999, 1713807677, 1713843677
 GOAL    , Tue Apr 23 01:41:17 2024, 10:00:00, test, duration: 9999999, 1713807677, 1713843677
@@ -326,7 +324,7 @@ DO      , Tue Apr 23 01:41:17 2024, 10:00:00, test, test19, 1713807677, 17138436
 )";
     std::istringstream iss(temp_str);
 
-    for (std::string line; std::getline(iss, line); )
+    for (std::string line; std::getline(iss, line);)
     {
         eval_log_line_str(line.c_str());
     }
@@ -335,9 +333,8 @@ DO      , Tue Apr 23 01:41:17 2024, 10:00:00, test, test19, 1713807677, 17138436
     PrettyWriter<StringBuffer> writer(buffer);
     d.Accept(writer);
 
-    CHECK(std::string(buffer.GetString()) ==
-std::string(
-R"({
+    CHECK(std::string(buffer.GetString()) == std::string(
+                                                 R"({
     "events": {
         "test": {
             "create_date_time_t": 1713807677,
