@@ -1,16 +1,13 @@
 #include "common.hpp"
-#include "config.hpp"
 #include "app_config.hpp"
 #include "include/fast-cpp-csv-parser/csv.h"
 #include "include/rapidjson/document.h"
 #include "include/rapidjson/prettywriter.h"
 #include "include/rapidjson/stringbuffer.h"
 #include "include/rapidjson/writer.h"
-#include "io.hpp"
 #include <ctime>
-#include <set>
-#include <string>
 #include <sstream>
+#include "log_eval.hpp"
 
 #include "doctest_header.h"
 
@@ -185,6 +182,37 @@ int get_event_names(std::set<std::string>& event_names)
         event_names.insert(event_name);
     }
     return 0;
+}
+
+std::vector<event_do_log> get_all_events()
+{
+    auto& events = d["events"];
+    std::vector<event_do_log> event_do_log_vec;
+    for (Value::ConstMemberIterator itr = events.MemberBegin(); itr != events.MemberEnd(); ++itr)
+    {
+        auto event_name = itr->name.GetString();
+        auto& logs = itr->value["logs"];
+        for (Value::ConstValueIterator itr = logs.Begin(); itr != logs.End(); ++itr)
+        {
+            auto& log = *itr;
+            event_do_log event_do_log_;
+            event_do_log_.event_name = (char *)event_name;
+            event_do_log_.event_data = (char *)log["log"].GetString();
+            event_do_log_.start_time_t = log["start_time_t"].GetInt64();
+            event_do_log_.end_time_t = log["end_time_t"].GetInt64();
+            event_do_log_.duration_t = log["duration_t"].GetInt64();
+
+            std::string start_time_str = get_time_str(&event_do_log_.start_time_t);
+            event_do_log_.start_time = std::move(start_time_str);
+            std::string end_time_str = get_time_str(&event_do_log_.end_time_t);
+            event_do_log_.end_time = std::move(end_time_str);
+            std::string duration_str = get_duration_str(event_do_log_.start_time_t, event_do_log_.end_time_t);
+            event_do_log_.duration = std::move(duration_str);
+
+            event_do_log_vec.push_back(event_do_log_);
+        }
+    }
+    return event_do_log_vec;
 }
 
 int eval_log_line(std::string action,

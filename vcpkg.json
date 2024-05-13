@@ -8,6 +8,7 @@
         "name": "zeromq",
         "features": ["websockets"]
       },
-      "cppzmq"
+      "cppzmq",
+      "json-dto"
     ]
 }

@@ -20,7 +20,6 @@
 #include <common.hpp>
 #include <log_eval.hpp>
 
-
 #ifndef __EMSCRIPTEN__
 #include "systray.h"
 #else
@@ -31,6 +30,7 @@
 #include "hello_imgui/hello_imgui.h"
 #include "hello_imgui/hello_imgui_assets.h"
 #include "hello_imgui/icons_font_awesome_6.h"
+#include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_md_wrapper.h"
 #include "immapp/immapp.h"
@@ -425,7 +425,7 @@ enum SCREEN_STATE
     Event_Edit_S
 };
 
-void DemoCoolBar(enum SCREEN_STATE &current_screen)
+void DemoCoolBar(enum SCREEN_STATE& current_screen)
 {
     auto ShowCoolBarButton = [](const std::string& anim) -> bool
     {
@@ -471,9 +471,13 @@ void DemoCoolBar(enum SCREEN_STATE &current_screen)
                     if (label == "speaker")
                     {
                         current_screen = Event_List_S;
-                    } else if (label == "cubes") {
+                    }
+                    else if (label == "cubes")
+                    {
                         current_screen = Setting_S;
-                    } else {
+                    }
+                    else
+                    {
                         current_screen = Time_S;
                     }
                 }
@@ -854,7 +858,63 @@ void guiFunction(AppState& appState)
         case Event_List_S:
         {
             static bool first_time = true;
+            static std::vector<event_do_log> events = {};
+            if (first_time) {
+                events = std::move(get_all_events());
+                first_time = false;
+            }
             DemoCoolBar(current_screen);
+            if (current_screen != Event_List_S) {
+                first_time = true;
+            }
+            static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable |
+                                           ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter |
+                                           ImGuiTableFlags_BordersV | ImGuiTableFlags_RowBg;
+            static const char* headers[] = {"Event", "start time", "duration", "description"};
+            if (ImGui::BeginTable("table1", IM_ARRAYSIZE(headers), flags))
+            {
+                // Submit columns name with TableSetupColumn() and call TableHeadersRow() to create a row with
+                // a header in each column. (Later we will show how TableSetupColumn() has other uses,
+                // optional flags, sizing weight etc.)
+                for (int column = 0; column < IM_ARRAYSIZE(headers); column++)
+                {
+                    ImGui::TableSetupColumn(headers[column]);
+                }
+                ImGui::TableHeadersRow();
+                static int selected = -1;
+                for (int row = 0; row < events.size(); row++)
+                {
+                    ImGui::TableNextRow();
+                    int column = 0;
+                    ImGui::TableSetColumnIndex(column++);
+                    ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap;
+                    char name[256];
+                    snprintf(name, IM_ARRAYSIZE(name), "%s##%d", events[row].event_name, row);
+                    if (ImGui::Selectable(name, selected==row, selectable_flags, ImVec2(0,0))) {
+                        selected = row;
+                    }
+                    if (ImGui::BeginPopupContextItem()) // <-- use last item id as popup id
+                    {
+                        // TODO: implement a screen SCREEN_STATE stack, jump into event viewer and jump
+                        if (ImGui::Button("View")) {
+
+                        }
+                        if (ImGui::Button("Delete")) {
+
+                        }
+                        if (ImGui::Button("Close"))
+                            ImGui::CloseCurrentPopup();
+                        ImGui::EndPopup();
+                    }
+                    ImGui::TableSetColumnIndex(column++);
+                    ImGui::Text("%s", events[row].start_time.c_str());
+                    ImGui::TableSetColumnIndex(column++);
+                    ImGui::Text("%s", events[row].duration.c_str());
+                    ImGui::TableSetColumnIndex(column++);
+                    ImGui::Text("%s", events[row].event_data);
+                }
+                ImGui::EndTable();
+            }
         }
         break;
         case Event_Edit_S:
@@ -1029,10 +1089,7 @@ int main(int argc, char** argv)
         ImGui::GetStyle().ItemSpacing = ImVec2(6.f, 4.f);
     };
 
-    runnerParams.callbacks.ShowGui = [&]
-    {
-        guiFunction(appState);
-    };
+    runnerParams.callbacks.ShowGui = [&] { guiFunction(appState); };
 
 #if EMSCRIPTEN
     runnerParams.iniFolderType = HelloImGui::IniFolderType::CustomFolder;

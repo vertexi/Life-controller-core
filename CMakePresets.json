@@ -20,11 +20,13 @@
         },
         {
             "name": "build_default_glfw_release",
+            "displayName": "clang-release-vcpkg",
             "description": "Build with default settings (opengl3 and glfw). You need to create a build directory and run from it",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/release",
           "cacheVariables": {
             "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+            "VCPKG_TARGET_TRIPLET": "x64-windows-static",
             "HELLOIMGUI_USE_GLFW3": "ON",
             "HELLOIMGUI_HAS_OPENGL3": "ON",
             "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
