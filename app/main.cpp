@@ -863,57 +863,94 @@ void guiFunction(AppState& appState)
                 events = std::move(get_all_events());
                 first_time = false;
             }
+            enum class event_context_menu {
+                VIEW,
+                EDIT,
+                DELETE_,
+                NONE
+            };
+            static int selected = -1;
+            static int event_view_row = -1;
+            static event_context_menu event_context_menu = event_context_menu::NONE;
             DemoCoolBar(current_screen);
             if (current_screen != Event_List_S) {
                 first_time = true;
+                selected = -1;
+                event_view_row = -1;
+                event_context_menu = event_context_menu::NONE;
             }
-            static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable |
-                                           ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter |
-                                           ImGuiTableFlags_BordersV | ImGuiTableFlags_RowBg;
-            static const char* headers[] = {"Event", "start time", "duration", "description"};
-            if (ImGui::BeginTable("table1", IM_ARRAYSIZE(headers), flags))
+
+            if (event_context_menu != event_context_menu::NONE)
             {
-                // Submit columns name with TableSetupColumn() and call TableHeadersRow() to create a row with
-                // a header in each column. (Later we will show how TableSetupColumn() has other uses,
-                // optional flags, sizing weight etc.)
-                for (int column = 0; column < IM_ARRAYSIZE(headers); column++)
-                {
-                    ImGui::TableSetupColumn(headers[column]);
+                switch (event_context_menu) {
+                    case (event_context_menu::VIEW):
+                        {
+                            ImGui::Text("%s", events[event_view_row].event_name);
+
+                            if (ButtonCenteredOnLine("Back"))
+                            {
+                                event_context_menu = event_context_menu::NONE;
+                            }
+                        }
+                        break;
+                    case event_context_menu::EDIT:
+                        // do something
+                        break;
+                    case event_context_menu::DELETE_:
+                        // do something
+                        break;
+                    default:
+                        break;
                 }
-                ImGui::TableHeadersRow();
-                static int selected = -1;
-                for (int row = 0; row < events.size(); row++)
+            } else
+            {
+                static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable |
+                                            ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter |
+                                            ImGuiTableFlags_BordersV | ImGuiTableFlags_RowBg;
+                static const char* headers[] = {"Event", "start time", "duration", "description"};
+                if (ImGui::BeginTable("table1", IM_ARRAYSIZE(headers), flags))
                 {
-                    ImGui::TableNextRow();
-                    int column = 0;
-                    ImGui::TableSetColumnIndex(column++);
-                    ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap;
-                    char name[256];
-                    snprintf(name, IM_ARRAYSIZE(name), "%s##%d", events[row].event_name, row);
-                    if (ImGui::Selectable(name, selected==row, selectable_flags, ImVec2(0,0))) {
-                        selected = row;
-                    }
-                    if (ImGui::BeginPopupContextItem()) // <-- use last item id as popup id
+                    // Submit columns name with TableSetupColumn() and call TableHeadersRow() to create a row with
+                    // a header in each column. (Later we will show how TableSetupColumn() has other uses,
+                    // optional flags, sizing weight etc.)
+                    for (int column = 0; column < IM_ARRAYSIZE(headers); column++)
                     {
-                        // TODO: implement a screen SCREEN_STATE stack, jump into event viewer and jump
-                        if (ImGui::Button("View")) {
-
-                        }
-                        if (ImGui::Button("Delete")) {
-
-                        }
-                        if (ImGui::Button("Close"))
-                            ImGui::CloseCurrentPopup();
-                        ImGui::EndPopup();
+                        ImGui::TableSetupColumn(headers[column]);
                     }
-                    ImGui::TableSetColumnIndex(column++);
-                    ImGui::Text("%s", events[row].start_time.c_str());
-                    ImGui::TableSetColumnIndex(column++);
-                    ImGui::Text("%s", events[row].duration.c_str());
-                    ImGui::TableSetColumnIndex(column++);
-                    ImGui::Text("%s", events[row].event_data);
+                    ImGui::TableHeadersRow();
+                    for (int row = 0; row < events.size(); row++)
+                    {
+                        ImGui::TableNextRow();
+                        int column = 0;
+                        ImGui::TableSetColumnIndex(column++);
+                        ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap;
+                        char name[256];
+                        snprintf(name, IM_ARRAYSIZE(name), "%s##%d", events[row].event_name, row);
+                        if (ImGui::Selectable(name, selected==row, selectable_flags, ImVec2(0,0))) {
+                            selected = row;
+                        }
+                        if (ImGui::BeginPopupContextItem()) // <-- use last item id as popup id
+                        {
+                            if (ImGui::Button("View")) {
+                                event_context_menu = event_context_menu::VIEW;
+                                event_view_row = row;
+                            }
+                            if (ImGui::Button("Delete")) {
+
+                            }
+                            if (ImGui::Button("Close"))
+                                ImGui::CloseCurrentPopup();
+                            ImGui::EndPopup();
+                        }
+                        ImGui::TableSetColumnIndex(column++);
+                        ImGui::Text("%s", events[row].start_time.c_str());
+                        ImGui::TableSetColumnIndex(column++);
+                        ImGui::Text("%s", events[row].duration.c_str());
+                        ImGui::TableSetColumnIndex(column++);
+                        ImGui::Text("%s", events[row].event_data);
+                    }
+                    ImGui::EndTable();
                 }
-                ImGui::EndTable();
             }
         }
         break;
@@ -1090,6 +1127,9 @@ int main(int argc, char** argv)
     {
         // Reduce spacing between items ((8, 4) by default)
         ImGui::GetStyle().ItemSpacing = ImVec2(6.f, 4.f);
+        // tune theme
+        ImVec4* colors = ImGui::GetStyle().Colors;
+        colors[ImGuiCol_Header]                 = ImVec4(0.27f, 0.38f, 0.61f, 1.00f);
     };
 
     runnerParams.callbacks.ShowGui = [&] { guiFunction(appState); };
@@ -1135,6 +1175,7 @@ int main(int argc, char** argv)
     addOnsParams.withMarkdownOptions = markdownOptions;
 
     runnerParams.imGuiWindowParams.showStatusBar = true;
+    runnerParams.imGuiWindowParams.showMenuBar = true;
     ImmApp::Run(runnerParams, addOnsParams);
 
     return res + client_stuff_return_code;  // the result from doctest is propagated here as well

@@ -17,6 +17,8 @@ struct event_do_log
     std::string end_time;
     std::time_t duration_t;
     std::string duration;
+
+    rapidjson::Value::ConstValueIterator data_ptr;
 };
 
 int eval_log();

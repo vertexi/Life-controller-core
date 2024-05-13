@@ -196,6 +196,7 @@ std::vector<event_do_log> get_all_events()
         {
             auto& log = *itr;
             event_do_log event_do_log_;
+            event_do_log_.data_ptr = itr;
             event_do_log_.event_name = (char *)event_name;
             event_do_log_.event_data = (char *)log["log"].GetString();
             event_do_log_.start_time_t = log["start_time_t"].GetInt64();
