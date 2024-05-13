@@ -163,6 +163,5 @@ if (WIN32)
     if(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/utils)
     add_subdirectory(utils)
     endif()
+    add_subdirectory(texocr)
 endif()
-
-add_subdirectory(texocr)

@@ -455,7 +455,11 @@ void DemoCoolBar(enum SCREEN_STATE& current_screen)
     std::vector<std::string> buttonLabels{"speaker", "cubes", "emojilove", "car", "seeu", "freeside"};
 
     ImGui::ImCoolBarConfig coolBarConfig;
+#ifdef __EMSCRIPTEN__
+    coolBarConfig.anchor = ImVec2(0.5f, 0.0f);  // position in the window (ratio of window size)
+#else
     coolBarConfig.anchor = ImVec2(0.5f, 0.07f);  // position in the window (ratio of window size)
+#endif
     coolBarConfig.normal_size = 10.0f;
     coolBarConfig.hovered_size = 60.0f;
     coolBarConfig.anim_step = 0.05f;
@@ -485,9 +489,8 @@ void DemoCoolBar(enum SCREEN_STATE& current_screen)
         }
         ImGui::EndCoolBar();
     }
-
-    ImGui::NewLine();
-    ImGui::NewLine();
+    auto pos = ImGui::GetCursorScreenPos();
+    ImGui::SetCursorScreenPos(pos + ImVec2(0.0f, 30.0f));
 }
 
 #define TIME_STR_LEN 20
@@ -532,25 +535,6 @@ void guiFunction(AppState& appState)
             first_time = false;
 
             DemoCoolBar(current_screen);
-
-            // ImVec2 dragSize(ImGui::GetMainViewport()->Size.x, ImGui::GetFontSize() * 1.5f);
-            // ImRect dragArea(ImGui::GetMainViewport()->Pos, ImGui::GetMainViewport()->Pos + dragSize);
-            // ImVec2 mousePos = ImGui::GetMousePos();
-
-            // if (ImGui::BeginPopupContextItem("ContextMenu"))
-            // {
-            //     ImGui::PushFont(appState.TitleFont);
-            //     if (ImGui::Selectable("Settings"))
-            //     {
-            //         current_screen = Setting_S;
-            //     }
-            //     ImGui::PopFont();
-            //     ImGui::EndPopup();
-            // }
-            // if (dragArea.Contains(mousePos) && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
-            // {
-            //     ImGui::OpenPopup("ContextMenu");
-            // }
 
             float avail = ImGui::GetContentRegionAvail().y;
             ImGui::SetCursorPosY(avail * 0.3f + style.FramePadding.y);
@@ -889,7 +873,16 @@ void guiFunction(AppState& appState)
                 {
                     case (event_context_menu::VIEW):
                     {
+                        ImGui::PushFont(appState.TimeFontSmall);
                         ImGui::Text("%s", events[event_view_row].event_name);
+                        ImGui::PopFont();
+
+                        ImGui::Text("%s", events[event_view_row].start_time.c_str());
+                        ImGui::Text("%s", events[event_view_row].duration.c_str());
+
+                        ImGui::PushFont(appState.ChineseFont);
+                        ImGuiMd::RenderUnindented(events[event_view_row].event_data);
+                        ImGui::PopFont();
 
                         if (ButtonCenteredOnLine("Back"))
                         {
@@ -1184,7 +1177,9 @@ int main(int argc, char** argv)
     addOnsParams.withMarkdownOptions = markdownOptions;
 
     runnerParams.imGuiWindowParams.showStatusBar = true;
-    runnerParams.imGuiWindowParams.showMenuBar = true;
+#ifndef __EMSCRIPTEN__
+    // runnerParams.imGuiWindowParams.showMenuBar = true;
+#endif
     ImmApp::Run(runnerParams, addOnsParams);
 
     return res + client_stuff_return_code;  // the result from doctest is propagated here as well
