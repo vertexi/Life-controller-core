@@ -1063,7 +1063,10 @@ int main(int argc, char** argv)
 #endif
     };
 
-    runnerParams.callbacks.BeforeExit = [&appState] { SaveMyAppSettings(appState); };
+    runnerParams.callbacks.BeforeExit = [&appState] {
+        SaveMyAppSettings(appState);
+        ImLottie::destroy();
+    };
     runnerParams.callbacks.AfterSwap = AppPoll;
 
     runnerParams.callbacks.HideWindow = [] { hide_window(); };
