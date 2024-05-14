@@ -11,6 +11,7 @@ int do_event_log(std::time_t start_time,
                  std::time_t end_time,
                  std::string event_name,
                  std::string event_data);
+int edit_event_log(std::string event_name, std::time_t start_time, std::string event_data, std::time_t end_time);
 int create_event_log(std::string event_name, std::string event_description);
 int create_goal_log(std::string event_name,
                     bool timesOrduration,

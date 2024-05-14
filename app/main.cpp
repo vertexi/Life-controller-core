@@ -894,7 +894,35 @@ void guiFunction(AppState& appState)
                         // do something
                         break;
                     case event_context_menu::DELETE_:
-                        // do something
+                        ImGui::OpenPopup("Are you sure delete it?");
+                        {
+                            ImGui::PushFont(appState.TitleFont);
+                            // Always center this window when appearing
+                            ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+                            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+                            if (ImGui::BeginPopupModal(
+                                    "Are you sure delete it?", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+                            {
+                                if (ImGui::Button("OK", ImVec2(120, 0)))
+                                {
+                                    first_time = true;
+                                    event_context_menu = event_context_menu::NONE;
+                                    edit_event_log(events[event_view_row].event_name, events[event_view_row].start_time_t, "", events[event_view_row].start_time_t);
+                                    eval_log_line_str((char*)life_controller_core::get_last_append_line().c_str());
+                                    ImGui::CloseCurrentPopup();
+                                }
+                                ImGui::SetItemDefaultFocus();
+                                ImGui::SameLine();
+                                if (ImGui::Button("Cancel", ImVec2(120, 0)))
+                                {
+                                    event_context_menu = event_context_menu::NONE;
+                                    ImGui::CloseCurrentPopup();
+                                }
+                                ImGui::EndPopup();
+                            }
+                            ImGui::PopFont();
+                        }
                         break;
                     default:
                         break;
@@ -938,6 +966,8 @@ void guiFunction(AppState& appState)
                             }
                             if (ImGui::Button("Delete"))
                             {
+                                event_context_menu = event_context_menu::DELETE_;
+                                event_view_row = row;
                             }
                             if (ImGui::Button("Close"))
                                 ImGui::CloseCurrentPopup();

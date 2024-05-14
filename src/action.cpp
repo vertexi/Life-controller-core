@@ -68,3 +68,18 @@ int create_goal_log(std::string event_name,
     append_log(LOGFILE_NAME, log_data);
     return 0;
 }
+
+int edit_event_log(std::string event_name, std::time_t start_time, std::string event_data, std::time_t end_time)
+{
+    std::string start_time_str = get_time_str(&start_time);
+    std::string duration_str = get_duration_str(start_time, end_time);
+
+    std::string log_data =
+        "EDIT    "
+        ", " +
+        start_time_str + ", " + duration_str + ", " + event_name + ", " + event_data + ", " +
+        std::to_string(start_time) + ", " + std::to_string(end_time) + "\n";
+    append_log(LOGFILE_NAME, log_data);
+
+    return 0;
+}

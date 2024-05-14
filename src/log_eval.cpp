@@ -93,25 +93,49 @@ Value& event_eval_log(Value& action_value,
     return action_value;
 }
 
-int event_eval_log_with_goal(Value& event, std::time_t start_time_t, std::time_t end_time_t)
+int event_eval_log_with_goal(Value& event, std::time_t start_time_t_, std::time_t end_time_t_)
 {
+    bool addOrSubtract = true;
+    std::time_t start_time_t, end_time_t;
+    if (start_time_t_ < end_time_t_)
+    {
+        start_time_t = start_time_t_;
+        end_time_t = end_time_t_;
+        addOrSubtract = true;
+    } else if (start_time_t_ == end_time_t_)
+    {
+        return 0;
+    }
+    else
+    {
+        start_time_t = end_time_t_;
+        end_time_t = start_time_t_;
+        addOrSubtract = false;
+    }
     auto& goals = event["goals"];
     assert(goals.IsArray());
     for (SizeType i = 0; i < goals.Size(); i++)
     {
         auto& goal = goals[i];
-        if (goal.HasMember("times"))
+        if (time_within(start_time_t, goal["start_time_t"].GetInt64(), goal["end_time_t"].GetInt64()))
         {
-            goal["progress"].SetInt64(goal["progress"].GetInt64() + 1);
-        }
-        else if (goal.HasMember("duration"))
-        {
-            if (time_within(start_time_t, goal["start_time_t"].GetInt64(), goal["end_time_t"].GetInt64()))
+            if (goal.HasMember("times"))
             {
-                auto goal_progress_t = goal["progress"].GetInt64();
-                auto goal_progress_t_new = goal_progress_t + (end_time_t - start_time_t);
+                if (addOrSubtract)
+                    goal["progress"].SetInt64(goal["progress"].GetInt64() + 1);
+                else
+                    goal["progress"].SetInt64(goal["progress"].GetInt64() - 1);
+            }
+            else if (goal.HasMember("duration"))
+            {
+                    auto goal_progress_t = goal["progress"].GetInt64();
+                    std::time_t goal_progress_t_new = 0;
+                    if (addOrSubtract)
+                        goal_progress_t_new = goal_progress_t + (end_time_t - start_time_t);
+                    else
+                        goal_progress_t_new = goal_progress_t - (end_time_t - start_time_t);
 
-                goal["progress"].SetInt64(goal_progress_t_new);
+                    goal["progress"].SetInt64(goal_progress_t_new);
             }
         }
     }
@@ -262,6 +286,40 @@ int eval_log_line(std::string action,
             event_eval_goal(event_data, goal_value, allocator);
             event_goals.PushBack(goal_value, allocator);
         }
+        else if (action == "EDIT")
+        {
+            if (!events.HasMember(event_name.c_str()))
+            {
+                create_new_event(allocator, events, event_name, event_data, start_time_t, false);
+            }
+            Value action_value(kObjectType);
+            event_eval_log(action_value, start_time_t, end_time_t, event_data, allocator);
+            auto& logs = events[event_name.c_str()]["logs"];
+            Value::ConstValueIterator itr = logs.Begin();
+            for (; itr != logs.End(); ++itr)
+            {
+                auto& log = *itr;
+                auto start_time_orig_t = log["start_time_t"].GetInt64();
+                if (start_time_orig_t == start_time_t) {
+                    break;
+                }
+            }
+            if (itr == logs.End()) {
+                events[event_name.c_str()]["logs"].PushBack(action_value, allocator);
+                event_eval_log_with_goal(events[event_name.c_str()], start_time_t, end_time_t);
+            } else {
+                auto& log = *itr;
+                auto start_time_orig_t = log["start_time_t"].GetInt64();
+                auto end_time_orig_t = log["end_time_t"].GetInt64();
+                event_eval_log_with_goal(events[event_name.c_str()], end_time_orig_t, start_time_orig_t);
+                logs.Erase(itr);
+                if (start_time_t != end_time_t)
+                {
+                    logs.PushBack(action_value, allocator);
+                    event_eval_log_with_goal(events[event_name.c_str()], start_time_t, end_time_t);
+                }
+            }
+        }
         else
         {
             debug_printf("UNKNOWN\n");
@@ -321,6 +379,9 @@ GOAL    , Tue Apr 23 01:41:17 2024, 10:00:00, test, times: 10, 1713807677, 17138
 GOAL    , Tue Apr 23 01:41:17 2024, 10:00:00, test, times: 99999, 1713807677, 1713843677
 GOAL    , Tue Apr 23 01:41:17 2024, 10:00:00, test, duration: 9999999, 1713807677, 1713843677
 DO      , Tue Apr 23 01:41:17 2024, 10:00:00, test, test19, 1713807677, 1713843677
+DO    , Tue Apr 23 01:41:17 2024, 10:00:00, test, test19, 1713807777, 1713807877
+EDIT    , Tue Apr 23 01:41:17 2024, 10:00:00, test, test19, 1713807777, 1713807777
+EDIT    , Tue Apr 23 01:41:17 2024, 10:00:00, test, test1988, 1713807677, 1713843677
 )";
     std::istringstream iss(temp_str);
 
@@ -345,7 +406,7 @@ DO      , Tue Apr 23 01:41:17 2024, 10:00:00, test, test19, 1713807677, 17138436
                     "start_time_t": 1713807677,
                     "end_time_t": 1713843677,
                     "duration_t": 36000,
-                    "log": "test19"
+                    "log": "test1988"
                 }
             ],
             "total_duration_t": 0,
